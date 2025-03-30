@@ -328,6 +328,10 @@ impl Beatrice {
         }
     }
 
+    pub fn get_n_speaker(&self) -> Option<i32> {
+        self.model.as_ref().map(|_| self.info.n_speakers)
+    }
+
     /* Change Settings */
     pub fn set_input_setting(
         &mut self,
@@ -375,7 +379,7 @@ impl Beatrice {
         Ok(())
     }
 
-    pub fn set_speaker(&mut self, speaker: u32) -> Result<(), &str> {
+    pub fn set_target_speaker(&mut self, speaker: u32) -> Result<(), &str> {
         let speaker = speaker as i32;
 
         if (self.info.n_speakers - 1) < speaker {

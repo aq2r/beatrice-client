@@ -1,21 +1,22 @@
 use std::{
-    path::PathBuf,
-    sync::{mpsc, Arc, LazyLock, Mutex},
+    ops::Deref,
+    sync::{mpsc, LazyLock, Mutex},
     thread,
 };
 
-use beatrice_lib::Beatrice;
 use cpal::{
     traits::{DeviceTrait as _, HostTrait as _, StreamTrait as _},
-    DeviceNameError, Stream, StreamConfig,
+    DeviceNameError, StreamConfig,
 };
 use ringbuf::{
     traits::{Consumer as _, Producer as _, Split as _},
     HeapRb,
 };
-use tauri::State;
 
-use crate::beatrice::BEATRICE;
+use crate::beatrice_invoke::BEATRICE;
+
+static INPUT_GAIN: Mutex<f32> = Mutex::new(1.0);
+static OUTPUT_GAIN: Mutex<f32> = Mutex::new(1.0);
 
 #[tauri::command]
 pub async fn cpal_get_inputs() -> Result<Vec<String>, String> {
@@ -44,6 +45,18 @@ pub async fn cpal_get_outputs() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
+pub async fn cpal_set_input_gain(gain: f32) {
+    let mut input_gain = INPUT_GAIN.lock().unwrap();
+    *input_gain = gain
+}
+
+#[tauri::command]
+pub async fn cpal_set_output_gain(gain: f32) {
+    let mut output_gain = OUTPUT_GAIN.lock().unwrap();
+    *output_gain = gain
+}
+
+#[tauri::command]
 pub async fn cpal_start_voice_changer(
     input_device_name: Option<String>,
     output_device_name: Option<String>,
@@ -67,9 +80,6 @@ pub async fn cpal_start_voice_changer(
 
     thread::spawn(move || {
         start_voice_changer(input_device_name, output_device_name, receiver).expect("msg");
-        // while receiver.recv().is_ok() {
-        //     dbg!(&input_device_name, &output_device_name);
-        // }
     });
 }
 
@@ -112,23 +122,19 @@ fn start_voice_changer(
         .nth(output_idx)
         .expect("Output not found");
 
-    // 設定の取得
     let input_config = input_device.default_input_config()?;
     let output_config1 = output_device1.default_output_config()?;
 
-    // リングバッファの設定 (ringbuf 0.4.8 の API に合わせる)
     let ring_size = 4096;
     let ring = HeapRb::new(ring_size);
     let (mut producer1, mut consumer1) = ring.split();
 
-    // 入力ストリームの設定
     let input_stream_config = StreamConfig {
         channels: input_config.channels(),
         sample_rate: input_config.sample_rate(),
         buffer_size: cpal::BufferSize::Fixed(480),
     };
 
-    // 出力ストリームの設定
     let output_stream_config1 = StreamConfig {
         channels: output_config1.channels(),
         sample_rate: output_config1.sample_rate(),
@@ -152,16 +158,15 @@ fn start_voice_changer(
             .expect("failed");
     }
 
-    // 入力ストリームの構築
-    // let mut stdout = stdout();
     let input_stream = input_device.build_input_stream(
         &input_stream_config,
         move |data: &[f32], _: &_| {
             let mut input_buffer = vec![0.0_f32; data.len()];
             input_buffer.copy_from_slice(data);
 
+            let input_gain = { *INPUT_GAIN.lock().unwrap() };
             for i in input_buffer.iter_mut() {
-                *i *= 10.0;
+                *i *= input_gain;
             }
 
             let mut result = {
@@ -171,15 +176,13 @@ fn start_voice_changer(
                     .unwrap_or_else(|_| vec![0.0; data.len()])
             };
 
+            let output_gain = { *OUTPUT_GAIN.lock().unwrap() };
             for i in result.iter_mut() {
-                *i /= 5.0;
+                *i *= output_gain;
             }
 
             let len = input_buffer.len().min(result.len());
             input_buffer[..len].copy_from_slice(&result[..len]);
-
-            // print!("\r{:?}{}", info.timestamp().callback, " ".repeat(5));
-            // stdout.flush().unwrap();
 
             producer1.push_slice(&input_buffer);
         },
@@ -196,7 +199,6 @@ fn start_voice_changer(
         None,
     )?;
 
-    // ストリームの開始
     input_stream.play()?;
     output_stream1.play()?;
 

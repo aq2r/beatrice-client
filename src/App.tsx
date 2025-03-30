@@ -5,6 +5,8 @@ import { RustInvoke } from "./rustInvoke";
 function App() {
     const [modelPath, setModelPath] = useState("");
     const [pitch, setPitch] = useState(0.0);
+    const [inputGain, setInputGain] = useState(1.0);
+    const [outputGain, setOutputGain] = useState(1.0);
     const [inputDevices, setInputDevices] = useState<string[]>([]);
     const [outputDevices, setOutputDevices] = useState<string[]>([]);
 
@@ -13,8 +15,8 @@ function App() {
 
     useEffect(() => {
         const promise = async () => {
-            const inputs = await RustInvoke.cpalGetInputs();
-            const outputs = await RustInvoke.cpalGetOutputs();
+            const inputs = await RustInvoke.Cpal.getInputs();
+            const outputs = await RustInvoke.Cpal.getOutputs();
 
             setInputDevices(inputs);
             setOutputDevices(outputs);
@@ -26,18 +28,31 @@ function App() {
 
     useEffect(() => {
         const promise = async () => {
-            await RustInvoke.cpalStartVoiceChanger(selectInputDevice, selectOutputDevice)
+            await RustInvoke.Cpal.startVoiceChanger(selectInputDevice, selectOutputDevice)
         };
         promise()
     }, [selectInputDevice, selectOutputDevice])
 
     useEffect(() => {
         const promise = async () => {
-            await RustInvoke.beatriceSetPitch(pitch);
+            await RustInvoke.Beatrice.setPitch(pitch);
         };
         promise()
     }, [pitch])
 
+    useEffect(() => {
+        const promise = async () => {
+            await RustInvoke.Cpal.setInputGain(inputGain);
+        };
+        promise()
+    }, [inputGain])
+
+    useEffect(() => {
+        const promise = async () => {
+            await RustInvoke.Cpal.setOutputGain(outputGain);
+        };
+        promise()
+    }, [outputGain])
 
     return (
         <div className="main">
@@ -49,13 +64,14 @@ function App() {
                     onChange={(e) => setModelPath(e.target.value)}
                 />
                 <button className="model-load-button"
-                    onClick={() => { RustInvoke.beatriceLoadModel(modelPath) }}
+                    onClick={() => { RustInvoke.Beatrice.loadModel(modelPath) }}
                 >Load</button>
             </div>
 
             <div className="pitch-control">
                 <label>Pitch: </label>
                 <input
+                    className="scroll-bar"
                     type="range"
                     min={-24.0}
                     max={24.0}
@@ -64,6 +80,34 @@ function App() {
                     onChange={(e) => setPitch(parseFloat(e.target.value))}
                 />
                 <span>{pitch}</span>
+            </div>
+
+            <div className="input-gain-control">
+                <label>InputGain: </label>
+                <input
+                    className="scroll-bar"
+                    type="range"
+                    min={0.1}
+                    max={10.0}
+                    step={0.1}
+                    value={inputGain}
+                    onChange={(e) => setInputGain(parseFloat(e.target.value))}
+                />
+                <span>{inputGain}</span>
+            </div>
+
+            <div className="output-gain-control">
+                <label>OutputGain: </label>
+                <input
+                    className="scroll-bar"
+                    type="range"
+                    min={0.1}
+                    max={10.0}
+                    step={0.1}
+                    value={outputGain}
+                    onChange={(e) => setOutputGain(parseFloat(e.target.value))}
+                />
+                <span>{outputGain}</span>
             </div>
 
             <div className="input-control">
