@@ -222,6 +222,9 @@ impl Beatrice {
         {
             let file_name = create_cstring("formant_shift_embeddings.bin")?;
 
+            formant_shift_embeddings
+                .resize(9 * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS, 0.0_f32);
+
             let result = unsafe {
                 Beatrice20b1_ReadSpeakerEmbeddings(
                     file_name.as_ptr(),
@@ -243,7 +246,31 @@ impl Beatrice {
         Ok(())
     }
 
+    pub fn reset_context(&mut self) {
+        unsafe {
+            let phone_context = Beatrice20b1_CreatePhoneContext1();
+            let pitch_context = Beatrice20b1_CreatePitchContext1();
+            let waveform_context = Beatrice20b1_CreateWaveformContext1();
+
+            let old_phone_ctx = self.lib.phone_context;
+            let old_pitch_ctx = self.lib.pitch_context;
+            let old_waveform_ctx = self.lib.waveform_context;
+
+            self.lib.phone_context = phone_context;
+            self.lib.pitch_context = pitch_context;
+            self.lib.waveform_context = waveform_context;
+
+            Beatrice20b1_DestroyPhoneContext1(old_phone_ctx);
+            Beatrice20b1_DestroyPitchContext1(old_pitch_ctx);
+            Beatrice20b1_DestroyWaveformContext1(old_waveform_ctx);
+        }
+    }
+
     pub fn infer(&mut self, input: &[f32]) -> Result<Vec<f32>, BeatriceError> {
+        if self.model.is_none() {
+            return Err(BeatriceError::ModelNotLoaded);
+        }
+
         let deinterleaved = self.to_deinterleave(input);
 
         let mut result = vec![vec![]; 2];
@@ -491,13 +518,18 @@ impl Beatrice {
         let mut speaker = [0.0_f32; BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS];
 
         if let Some(self_model) = &mut self.model {
-            let src_start =
-                self.info.target_speaker as usize * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS;
-            let src_slice = &mut self_model.speaker_embeddings
-                [src_start..src_start + BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS];
+            unsafe {
+                let src_start =
+                    self.info.target_speaker as usize * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS;
+                let src_slice = &self_model.speaker_embeddings
+                    [src_start..src_start + BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS];
 
-            src_slice[..BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS]
-                .copy_from_slice(&speaker[..BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS]);
+                std::ptr::copy_nonoverlapping(
+                    src_slice.as_ptr(),
+                    speaker.as_mut_ptr(),
+                    BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS,
+                );
+            }
 
             let formant_shift_index = ((self.info.formant_shift * 2.0 + 4.0).round() as usize)
                 * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS;
@@ -590,5 +622,19 @@ impl Drop for Beatrice {
             Beatrice20b1_DestroyPitchContext1(self.lib.pitch_context);
             Beatrice20b1_DestroyWaveformContext1(self.lib.waveform_context)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[ignore]
+    #[test]
+    fn test_load_model() {
+        let mut beatrice = Beatrice::new();
+        beatrice
+            .load_model("../beatrice_model/model_single")
+            .expect("Failed load Model");
     }
 }

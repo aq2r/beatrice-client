@@ -1,5 +1,21 @@
 * {
     padding: 0;
     margin: 0;
-    background-color: #292929;
+    background-color: #bebebe;
+}
+
+label {
+    padding-left: 10px;
+}
+
+.main {
+    padding: 10px;
+}
+
+.model-load-button {
+    width: 50px;
+}
+
+.pitch-control input {
+    width: 300px;
 }
