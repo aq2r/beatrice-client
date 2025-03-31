@@ -80,7 +80,7 @@ function App() {
                         type="range"
                         min={-24.0}
                         max={24.0}
-                        step={0.1}
+                        step={0.125}
                         value={pitch}
                         onChange={(e) => setPitch(parseFloat(e.target.value))}
                     />
@@ -93,7 +93,7 @@ function App() {
                         type="range"
                         min={-2.0}
                         max={2.0}
-                        step={0.1}
+                        step={0.5}
                         value={formantShift}
                         onChange={(e) => setFormantShift(parseFloat(e.target.value))}
                     />
