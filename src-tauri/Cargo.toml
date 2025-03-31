@@ -2,8 +2,8 @@
 name = "beatrice-client"
 version = "0.1.0"
 description = "A Tauri App"
-authors = ["you"]
 edition = "2021"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -22,8 +22,11 @@ beatrice_lib = { path = "../beatrice_lib" }
 
 tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 cpal = "0.15.3"
 anyhow = "1.0.97"
 ringbuf = "0.4.8"
+base64 = "0.22.1"
+toml = "0.8.20"

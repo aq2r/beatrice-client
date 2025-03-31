@@ -1,9 +1,11 @@
 mod beatrice_invoke;
 mod cpal_invoke;
+mod other_invoke;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             cpal_invoke::cpal_get_inputs,
@@ -20,6 +22,8 @@ pub fn run() {
             beatrice_invoke::beatrice_set_intonation_intensity,
             beatrice_invoke::beatrice_set_pitch_correction,
             beatrice_invoke::beatrice_set_pitch_correction_type,
+            beatrice_invoke::beatrice_search_model,
+            other_invoke::other_read_image,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

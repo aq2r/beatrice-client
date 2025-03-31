@@ -1,9 +1,9 @@
 use std::{
-    ops::Deref,
     sync::{mpsc, LazyLock, Mutex},
     thread,
 };
 
+use anyhow::Context;
 use cpal::{
     traits::{DeviceTrait as _, HostTrait as _, StreamTrait as _},
     DeviceNameError, StreamConfig,
@@ -60,6 +60,7 @@ pub async fn cpal_set_output_gain(gain: f32) {
 pub async fn cpal_start_voice_changer(
     input_device_name: Option<String>,
     output_device_name: Option<String>,
+    monitor_device_name: Option<String>,
 ) {
     static AUDIO_STOP_SENDER: LazyLock<Mutex<Option<mpsc::Sender<()>>>> =
         LazyLock::new(|| Mutex::new(None));
@@ -79,132 +80,200 @@ pub async fn cpal_start_voice_changer(
     }
 
     thread::spawn(move || {
-        start_voice_changer(input_device_name, output_device_name, receiver).expect("msg");
+        start_voice_changer(
+            input_device_name,
+            output_device_name,
+            monitor_device_name,
+            receiver,
+        )
+        .expect("msg");
     });
 }
 
 fn start_voice_changer(
     input_device_name: Option<String>,
     output_device_name: Option<String>,
+    monitor_device_name: Option<String>,
     receiver: mpsc::Receiver<()>,
 ) -> anyhow::Result<()> {
-    let (Some(input_device_name), Some(output_device_name)) =
-        (input_device_name, output_device_name)
-    else {
+    let Some(input_device_name) = input_device_name else {
         return Ok(());
     };
+
+    let ring_size = 4096;
+
+    let ring = HeapRb::new(ring_size);
+    let (mut output_producer, mut output_consumer) = ring.split();
+    let ring = HeapRb::new(ring_size);
+    let (mut monitor_producer, mut monitor_consumer) = ring.split();
 
     let host = cpal::host_from_id(cpal::HostId::Wasapi)?;
 
-    let input_devices = host.input_devices()?.collect::<Vec<_>>();
-    let output_devices = host.output_devices()?.collect::<Vec<_>>();
+    let input_stream = {
+        let input_devices = host.input_devices()?.collect::<Vec<_>>();
+        let Some(input_idx) = input_devices.iter().position(|device| {
+            device.name().unwrap_or_else(|_| String::new()) == input_device_name
+        }) else {
+            return Ok(());
+        };
 
-    let Some(input_idx) = input_devices
-        .iter()
-        .position(|device| device.name().unwrap_or_else(|_| String::new()) == input_device_name)
-    else {
-        return Ok(());
+        let input_device = host
+            .input_devices()?
+            .nth(input_idx)
+            .context("input_device not found")?;
+        let input_config = input_device.default_input_config()?;
+        let input_stream_config = StreamConfig {
+            channels: input_config.channels(),
+            sample_rate: input_config.sample_rate(),
+            buffer_size: cpal::BufferSize::Fixed(480),
+        };
+
+        {
+            let mut beatrice = BEATRICE.lock().unwrap();
+            beatrice
+                .set_input_setting(
+                    input_config.sample_rate().0.into(),
+                    input_config.channels().into(),
+                )
+                .expect("failed");
+        }
+
+        input_device.build_input_stream(
+            &input_stream_config,
+            move |data: &[f32], _: &_| {
+                let mut input_buffer = vec![0.0_f32; data.len()];
+                input_buffer.copy_from_slice(data);
+
+                let input_gain = { *INPUT_GAIN.lock().unwrap() };
+                for i in input_buffer.iter_mut() {
+                    *i *= input_gain;
+                }
+
+                let mut result = {
+                    let mut beatrice = BEATRICE.lock().unwrap();
+                    beatrice
+                        .infer(&input_buffer)
+                        .unwrap_or_else(|_| vec![0.0; data.len()])
+                };
+
+                let output_gain = { *OUTPUT_GAIN.lock().unwrap() };
+                for i in result.iter_mut() {
+                    *i *= output_gain;
+                }
+
+                let len = input_buffer.len().min(result.len());
+                input_buffer[..len].copy_from_slice(&result[..len]);
+
+                output_producer.push_slice(&input_buffer);
+                monitor_producer.push_slice(&input_buffer);
+            },
+            |err| eprintln!("入力エラー: {}", err),
+            None,
+        )?
     };
 
-    let Some(output_idx) = output_devices
-        .iter()
-        .position(|device| device.name().unwrap_or_else(|_| String::new()) == output_device_name)
-    else {
-        return Ok(());
-    };
+    let output_stream = match output_device_name {
+        Some(device_name) if device_name == "None" => None,
+        None => None,
 
-    let input_device = host
-        .input_devices()?
-        .nth(input_idx)
-        .expect("Input not found");
-    let output_device1 = host
-        .output_devices()?
-        .nth(output_idx)
-        .expect("Output not found");
-
-    let input_config = input_device.default_input_config()?;
-    let output_config1 = output_device1.default_output_config()?;
-
-    let ring_size = 4096;
-    let ring = HeapRb::new(ring_size);
-    let (mut producer1, mut consumer1) = ring.split();
-
-    let input_stream_config = StreamConfig {
-        channels: input_config.channels(),
-        sample_rate: input_config.sample_rate(),
-        buffer_size: cpal::BufferSize::Fixed(480),
-    };
-
-    let output_stream_config1 = StreamConfig {
-        channels: output_config1.channels(),
-        sample_rate: output_config1.sample_rate(),
-        buffer_size: cpal::BufferSize::Fixed(480),
-    };
-
-    {
-        let mut beatrice = BEATRICE.lock().unwrap();
-
-        beatrice
-            .set_input_setting(
-                input_config.sample_rate().0.into(),
-                input_config.channels().into(),
-            )
-            .expect("failed");
-        beatrice
-            .set_output_setting(
-                output_config1.sample_rate().0.into(),
-                output_config1.channels().into(),
-            )
-            .expect("failed");
-    }
-
-    let input_stream = input_device.build_input_stream(
-        &input_stream_config,
-        move |data: &[f32], _: &_| {
-            let mut input_buffer = vec![0.0_f32; data.len()];
-            input_buffer.copy_from_slice(data);
-
-            let input_gain = { *INPUT_GAIN.lock().unwrap() };
-            for i in input_buffer.iter_mut() {
-                *i *= input_gain;
-            }
-
-            let mut result = {
-                let mut beatrice = BEATRICE.lock().unwrap();
-                beatrice
-                    .infer(&input_buffer)
-                    .unwrap_or_else(|_| vec![0.0; data.len()])
+        Some(device_name) => {
+            let output_devices = host.output_devices()?.collect::<Vec<_>>();
+            let Some(output_idx) = output_devices
+                .iter()
+                .position(|device| device.name().unwrap_or_else(|_| String::new()) == device_name)
+            else {
+                return Ok(());
             };
 
-            let output_gain = { *OUTPUT_GAIN.lock().unwrap() };
-            for i in result.iter_mut() {
-                *i *= output_gain;
+            let output_device = host
+                .output_devices()?
+                .nth(output_idx)
+                .context("output not found")?;
+            let output_config = output_device.default_output_config()?;
+
+            let output_stream_config = StreamConfig {
+                channels: output_config.channels(),
+                sample_rate: output_config.sample_rate(),
+                buffer_size: cpal::BufferSize::Fixed(480),
+            };
+
+            {
+                let mut beatrice = BEATRICE.lock().unwrap();
+                beatrice
+                    .set_output_setting(
+                        output_config.sample_rate().0.into(),
+                        output_config.channels().into(),
+                    )
+                    .expect("failed");
             }
 
-            let len = input_buffer.len().min(result.len());
-            input_buffer[..len].copy_from_slice(&result[..len]);
+            Some(output_device.build_output_stream(
+                &output_stream_config,
+                move |data: &mut [f32], _: &_| {
+                    output_consumer.pop_slice(data);
+                },
+                |err| eprintln!("出力エラー: {}", err),
+                None,
+            )?)
+        }
+    };
 
-            producer1.push_slice(&input_buffer);
-        },
-        |err| eprintln!("入力エラー: {}", err),
-        None,
-    )?;
+    let monitor_stream = match monitor_device_name {
+        Some(device_name) if device_name == "None" => None,
+        None => None,
 
-    let output_stream1 = output_device1.build_output_stream(
-        &output_stream_config1,
-        move |data: &mut [f32], _: &_| {
-            consumer1.pop_slice(data);
-        },
-        |err| eprintln!("出力エラー: {}", err),
-        None,
-    )?;
+        Some(device_name) => {
+            let monitor_devices = host.output_devices()?.collect::<Vec<_>>();
+
+            let Some(monitor_idx) = monitor_devices
+                .iter()
+                .position(|device| device.name().unwrap_or_else(|_| String::new()) == device_name)
+            else {
+                return Ok(());
+            };
+
+            let monitor_device = host
+                .output_devices()?
+                .nth(monitor_idx)
+                .context("monitor_device not found")?;
+
+            let monitor_config = monitor_device.default_output_config()?;
+
+            let monitor_stream_config = StreamConfig {
+                channels: monitor_config.channels(),
+                sample_rate: monitor_config.sample_rate(),
+                buffer_size: cpal::BufferSize::Fixed(480),
+            };
+
+            Some(monitor_device.build_output_stream(
+                &monitor_stream_config,
+                move |data: &mut [f32], _: &_| {
+                    monitor_consumer.pop_slice(data);
+                },
+                |err| eprintln!("出力エラー: {}", err),
+                None,
+            )?)
+        }
+    };
 
     input_stream.play()?;
-    output_stream1.play()?;
+
+    if let Some(stream) = &output_stream {
+        stream.play()?;
+    }
+    if let Some(stream) = &monitor_stream {
+        stream.play()?;
+    }
 
     while receiver.recv().is_ok() {
         input_stream.pause()?;
-        output_stream1.pause()?;
+
+        if let Some(stream) = &output_stream {
+            stream.pause()?;
+        }
+        if let Some(stream) = &monitor_stream {
+            stream.pause()?;
+        }
     }
 
     Ok(())

@@ -18,11 +18,36 @@ class Cpal {
         await invoke<void>("cpal_set_output_gain", { gain: gain });
     }
 
-    static startVoiceChanger = async (inputDeviceName: string | null, outputDeviceName: string | null): Promise<void> => {
+    static startVoiceChanger = async (
+        inputDeviceName: string | null,
+        outputDeviceName: string | null,
+        monitorDeviceName: string | null,
+    ): Promise<void> => {
         await invoke<void>("cpal_start_voice_changer",
-            { inputDeviceName: inputDeviceName, outputDeviceName: outputDeviceName }
+            {
+                inputDeviceName: inputDeviceName,
+                outputDeviceName: outputDeviceName,
+                monitorDeviceName: monitorDeviceName
+            }
         );
     }
+}
+
+export interface BeatriceVoiceInfo {
+    name: string,
+    description: string,
+    average_pitch: number,
+    portrait_path: string,
+    portrait_description: string,
+}
+
+export interface BeatriceModelInfo {
+    model_path: string,
+    version: string,
+    name: string,
+    description: string,
+
+    voices: BeatriceVoiceInfo[],
 }
 
 class Beatrice {
@@ -34,6 +59,10 @@ class Beatrice {
         }
     }
 
+    static setSpeaker = async (speakerIdx: number) => {
+        await invoke<void>("beatrice_set_target_speaker", { target: speakerIdx })
+    }
+
     static setPitch = async (pitch: number) => {
         await invoke<void>("beatrice_set_pitch", { pitch: pitch })
     }
@@ -42,33 +71,40 @@ class Beatrice {
         await invoke<void>("beatrice_set_formant_shift", { formant: formant })
     }
 
-    static setAverageSourcePitch = async (average_source_pitch: number) => {
+    static setAverageSourcePitch = async (averageSourcePitch: number) => {
         await invoke<void>("beatrice_set_average_source_pitch", {
-            average_source_pitch: average_source_pitch
+            averageSourcePitch: averageSourcePitch
         })
     }
 
-    static setIntonationIntensity = async (intonation_intensity: number) => {
+    static setIntonationIntensity = async (intonationIntensity: number) => {
         await invoke<void>("beatrice_set_intonation_intensity", {
-            intonation_intensity: intonation_intensity
+            intonationIntensity: intonationIntensity
         })
-
     }
 
-    static setPitchCorrection = async (pitch_correction: number) => {
+    static setPitchCorrection = async (pitchCorrection: number) => {
         await invoke<void>("beatrice_set_pitch_correction", {
-            pitch_correction: pitch_correction
+            pitchCorrection: pitchCorrection
         })
     }
 
-    static setPitchCorrectionType = async (pitch_correction_type: number) => {
+    static setPitchCorrectionType = async (pitchCorrectionType: number) => {
         await invoke<void>("beatrice_set_pitch_correction_type", {
-            pitch_correction_type: pitch_correction_type
+            pitchCorrectionType: pitchCorrectionType
         })
+    }
+
+    static searchModel = async () => {
+        return await invoke<BeatriceModelInfo[]>("beatrice_search_model");
     }
 }
 
 export class RustInvoke {
     static Cpal = Cpal
     static Beatrice = Beatrice
+
+    static otherReadImage = async (path: string) => {
+        return await invoke<string>("other_read_image", { path: path });
+    }
 }
