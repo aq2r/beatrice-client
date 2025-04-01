@@ -19,6 +19,6 @@ fn main() {
     }
 
     // beatriceライブラリをリンク
-    println!("cargo:rustc-link-search=native=lib");
+    println!("cargo:rustc-link-search=native=beatrice_lib/lib");
     println!("cargo:rustc-link-lib=static=beatrice");
 }

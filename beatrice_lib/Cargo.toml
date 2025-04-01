@@ -6,7 +6,6 @@ publish = false
 
 [dependencies]
 rubato = "0.16.1"
-# anyhow = "1.0.97"
 thiserror = "2.0.12"
 ringbuf = "0.4.8"
 

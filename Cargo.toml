@@ -1,0 +1,6 @@
+[workspace]
+resolver = "3"
+members = ["beatrice_lib", "src-tauri"]
+
+[workspace.dependencies]
+beatrice_lib = { path = "beatrice_lib" }
