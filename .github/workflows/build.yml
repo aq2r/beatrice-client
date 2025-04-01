@@ -32,7 +32,7 @@ jobs:
       - name: Generate ThirdPartyLicenses-rs
         run: |
           cargo install --locked cargo-bundle-licenses
-          cargo bundle-licenses --format json --output ThirdPartyLicenses-rs.json
+          cargo bundle-licenses --format yaml --output ThirdPartyLicenses-rs.yaml
 
       - name: build tauri
         run: |
