@@ -42,8 +42,14 @@ export const ModelCard = (
 export const SelectDirCard = ({ setModelInfo: setModelInfo }: { setModelInfo: setState<BeatriceModelInfo[]> }) => {
     return (
         <div className="card card-select-dir" onClick={async () => {
-            const modelInfo = await RustInvoke.Beatrice.searchModel();
-            setModelInfo(modelInfo);
+            try {
+                const modelInfo = await RustInvoke.Beatrice.searchModel();
+                setModelInfo(modelInfo);
+            } catch (err) {
+                if (err !== "SelectCanceled") {
+                    console.log(err);
+                }
+            }
         }}>
             <span>...</span>
 

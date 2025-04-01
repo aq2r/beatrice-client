@@ -8,6 +8,7 @@ use beatrice_lib::Beatrice;
 use serde::{Deserialize, Serialize};
 use tauri::Runtime;
 use tauri_plugin_dialog::DialogExt as _;
+use tauri_plugin_store::StoreExt as _;
 
 /* Voice Changer */
 
@@ -96,20 +97,34 @@ pub struct BeatriceVoiceInfo {
     portrait_description: String,
 }
 
+const TAURI_STORE_MODEL_PATH_KEY: &str = "tauriStoreModelPath";
 #[tauri::command]
 pub async fn beatrice_search_model<R: Runtime>(
     app: tauri::AppHandle<R>,
+    input_folder_path: Option<String>,
 ) -> Result<Vec<BeatriceModelInfo>, String> {
-    let folder_path = app.dialog().file().blocking_pick_folder();
-    let Some(folder_path) = folder_path else {
-        return Err("SelectCanceled".to_string());
+    let folder_path = {
+        match input_folder_path {
+            Some(val) => val,
+            None => {
+                let folder_path = app.dialog().file().blocking_pick_folder();
+                let Some(folder_path) = folder_path else {
+                    return Err("SelectCanceled".to_string());
+                };
+
+                let folder_path = folder_path.to_string();
+
+                let store = app.store("store.json").map_err(|err| err.to_string())?;
+                store.set(TAURI_STORE_MODEL_PATH_KEY, folder_path.clone());
+
+                folder_path
+            }
+        }
     };
 
     // モデルがあるフォルダだけを集める
     let mut model_folders = vec![]; // (folder path, toml path)
-    for entry in
-        (std::fs::read_dir(folder_path.to_string()).map_err(|err| err.to_string())?).flatten()
-    {
+    for entry in (std::fs::read_dir(folder_path).map_err(|err| err.to_string())?).flatten() {
         let folder_path = entry.path();
         if !folder_path.is_dir() {
             continue;

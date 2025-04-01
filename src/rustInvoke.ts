@@ -95,8 +95,13 @@ class Beatrice {
         })
     }
 
-    static searchModel = async () => {
-        return await invoke<BeatriceModelInfo[]>("beatrice_search_model");
+    static searchModel = async (modelPath?: string) => {
+        if (modelPath) {
+            return await invoke<BeatriceModelInfo[]>("beatrice_search_model", { inputFolderPath: modelPath });
+        } else {
+            return await invoke<BeatriceModelInfo[]>("beatrice_search_model");
+        }
+
     }
 }
 

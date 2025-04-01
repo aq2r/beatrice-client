@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import { BeatriceModelInfo, RustInvoke } from "./rustInvoke";
 import { ModelCard, SelectDirCard } from "./card";
+import { Store, load as tauriStoreLoad } from '@tauri-apps/plugin-store';
+import { TauriStoreDevice, tauriStoreDeviceKey, tauriStoreModelPathKey as tauriStoreModelPathKey, TauriStoreSliders, tauriStorSlidersKey } from "./tauriStore";
 
 function App() {
+    const [store, setStore] = useState<Store | null>(null);
+
     const [modelInfo, setModelInfo] = useState<BeatriceModelInfo[]>([]);
     const [selectModel, setSelectModel] = useState<BeatriceModelInfo | null>(null);
     const [selectSpeakerIdx, setSelectSpeakerIdx] = useState<number>(0);
@@ -20,16 +24,13 @@ function App() {
     const [selectOutputDevice, setSelectOutputDevice] = useState<string | null>(null);
     const [selectMonitorDevice, setSelectMonitorDevice] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (selectModel === null) { return; }
-
-        RustInvoke.Beatrice.loadModel(selectModel.model_path);
-        RustInvoke.Beatrice.setAverageSourcePitch(selectModel.voices[0].average_pitch);
-        RustInvoke.Beatrice.setSpeaker(selectSpeakerIdx);
-    }, [selectModel, selectSpeakerIdx]);
-
+    // 初期設定
     useEffect(() => {
         const promise = async () => {
+            const store = await tauriStoreLoad('store.json', { autoSave: true });
+            setStore(store);
+
+            // 入出力の設定
             const inputs = ["None", ...await RustInvoke.Cpal.getInputs()];
             const outputs = ["None", ...await RustInvoke.Cpal.getOutputs()];
             const monitors = [...outputs];
@@ -41,15 +42,70 @@ function App() {
             setSelectInputDevice(null);
             setSelectOutputDevice(null);
             setSelectMonitorDevice(null);
+
+            // デバイス設定
+            if (store) {
+                const storeDevices = await store.get<TauriStoreDevice>(tauriStoreDeviceKey);
+                if (storeDevices) {
+                    setSelectInputDevice(storeDevices.input);
+                    setSelectOutputDevice(storeDevices.output);
+                    setSelectMonitorDevice(storeDevices.monitor);
+                }
+
+                const storeModelPath = await store.get<string>(tauriStoreModelPathKey);
+                if (storeModelPath) {
+                    setModelInfo(await RustInvoke.Beatrice.searchModel(storeModelPath));
+                }
+
+                const storeSlider = await store.get<TauriStoreSliders>(tauriStorSlidersKey);
+                if (storeSlider) {
+                    setPitch(storeSlider.pitch);
+                    setInputGain(storeSlider.inputGain);
+                    setOutputGain(storeSlider.outputGain);
+                    setFormantShift(storeSlider.formantShift);
+                }
+            }
         };
         promise()
     }, [])
 
+    // モデルと話者変更時
     useEffect(() => {
+        if (selectModel === null) { return; }
+
+        RustInvoke.Beatrice.loadModel(selectModel.model_path);
+        RustInvoke.Beatrice.setAverageSourcePitch(selectModel.voices[0].average_pitch);
+        RustInvoke.Beatrice.setSpeaker(selectSpeakerIdx);
+    }, [selectModel, selectSpeakerIdx]);
+
+    // 入出力の変更時
+    useEffect(() => {
+        if (store) {
+            const storeValue: TauriStoreDevice = {
+                input: selectInputDevice,
+                output: selectOutputDevice,
+                monitor: selectMonitorDevice
+            };
+
+            store.set(tauriStoreDeviceKey, storeValue);
+        }
+
         RustInvoke.Cpal.startVoiceChanger(selectInputDevice, selectOutputDevice, selectMonitorDevice)
     }, [selectInputDevice, selectOutputDevice, selectMonitorDevice])
 
+    // 入出力音量の変更時
     useEffect(() => {
+        if (store) {
+            const storeValue: TauriStoreSliders = {
+                pitch: pitch,
+                inputGain: inputGain,
+                outputGain: outputGain,
+                formantShift: formantShift
+            };
+
+            store.set(tauriStorSlidersKey, storeValue);
+        }
+
         RustInvoke.Cpal.setInputGain(inputGain);
         RustInvoke.Cpal.setOutputGain(outputGain);
         RustInvoke.Beatrice.setPitch(pitch);
@@ -130,6 +186,7 @@ function App() {
                         <div className="label-title">Input:</div>
                         <select
                             className="select"
+                            value={selectInputDevice || "None"}
                             onChange={(event) => { setSelectInputDevice(event.target.value) }}
                         >
                             {inputDevices.map((i) => { return <option key={i} value={i}>{i}</option> })}
@@ -140,6 +197,7 @@ function App() {
                         <div className="label-title">Output:</div>
                         <select
                             className="select"
+                            value={selectOutputDevice || "None"}
                             onChange={(event) => { setSelectOutputDevice(event.target.value) }}
                         >
                             {outputDevices.map((i) => { return <option key={i} value={i}>{i}</option> })}
@@ -150,6 +208,7 @@ function App() {
                         <div className="label-title">Monitor:</div>
                         <select
                             className="select"
+                            value={selectMonitorDevice || "None"}
                             onChange={(event) => { setSelectMonitorDevice(event.target.value) }}
                         >
                             {monitorDevices.map((i) => { return <option key={i} value={i}>{i}</option> })}
