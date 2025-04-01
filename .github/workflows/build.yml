@@ -44,6 +44,5 @@ jobs:
           draft: true
           files: |
             target/release/beatrice-client.exe
-            target/release/bundle/msi/*.msi
             ThirdPartyLicenses-js.txt
             ThirdPartyLicenses-rs.json
