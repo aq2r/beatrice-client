@@ -7,7 +7,7 @@ export interface TauriStoreDevice {
 
 export const tauriStoreModelPathKey = "tauriStoreModelPath";
 
-export const tauriStorSlidersKey = "tauriStorSliders";
+export const tauriStorSlidersKey = "tauriStoreSliders";
 export interface TauriStoreSliders {
     pitch: number,
     inputGain: number,
