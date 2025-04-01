@@ -38,7 +38,7 @@ jobs:
         run: |
           yarn tauri build
 
-      - name: Attach ThirdPartyLicenses
+      - name: Attach File
         uses: softprops/action-gh-release@v2
         with:
           draft: true
