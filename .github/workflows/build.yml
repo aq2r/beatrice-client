@@ -45,4 +45,4 @@ jobs:
           files: |
             target/release/beatrice-client.exe
             ThirdPartyLicenses-js.txt
-            ThirdPartyLicenses-rs.json
+            ThirdPartyLicenses-rs.yaml
