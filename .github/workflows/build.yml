@@ -35,19 +35,15 @@ jobs:
           cargo bundle-licenses --workspace --format json --output ThirdPartyLicenses-rs.json
 
       - name: build tauri
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: app-v__VERSION__
-          releaseName: "App v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
-          releaseDraft: true
-          prerelease: false
+        run: |
+          yarn tauri build
 
       - name: Attach ThirdPartyLicenses
         uses: softprops/action-gh-release@v2
         with:
+          draft: true
           files: |
+            target/release/beatrice-client.exe
+            target/release/bundle/msi/*.msi
             ThirdPartyLicenses-js.txt
             ThirdPartyLicenses-rs.json
