@@ -11,6 +11,7 @@ function App() {
     const [modelInfo, setModelInfo] = useState<BeatriceModelInfo[]>([]);
     const [selectModel, setSelectModel] = useState<BeatriceModelInfo | null>(null);
     const [selectSpeakerIdx, setSelectSpeakerIdx] = useState<number>(0);
+    const [selectSpeakerInfo, setSelectSpeakerInfo] = useState<string>("");
 
     const [pitch, setPitch] = useState(0.0);
     const [inputGain, setInputGain] = useState(1.0);
@@ -111,6 +112,15 @@ function App() {
         RustInvoke.Beatrice.setPitch(pitch);
         RustInvoke.Beatrice.setFormantShift(formantShift);
     }, [pitch, inputGain, outputGain, formantShift])
+
+    // 話者変更時
+    useEffect(() => {
+        const selectSpeaker = selectModel?.voices[selectSpeakerIdx];
+
+        if (selectSpeaker) {
+            setSelectSpeakerInfo(selectSpeaker.description);
+        }
+    }, [selectModel, selectSpeakerIdx])
 
     return (
         <div className="container">
@@ -216,15 +226,19 @@ function App() {
                     </div>
                 </div>
 
+                <div className="label-title">Speaker:</div>
 
                 <div className="speaker-controller">
-                    <div className="label-title">Speaker:</div>
                     <select
                         className="select speaker-select"
                         onChange={(event) => { setSelectSpeakerIdx(parseInt(event.target.value)) }}
                     >
                         {selectModel?.voices.map((i, idx) => { return <option key={i.name} value={idx}>{i.name}</option> })}
                     </select>
+
+                    <div className="description">
+                        <label>{selectSpeakerInfo}</label>
+                    </div>
                 </div>
             </div>
         </div>

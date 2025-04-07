@@ -84,8 +84,9 @@ body {
 .card .card-info {
     display: none;
     left: 0;
+    top: 0;
     padding: 10px;
-    transform: translate(120px, 0px);
+    transform: translate(220px, 20px);
     box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.5);
     position: fixed;
     z-index: 100;
@@ -93,13 +94,13 @@ body {
     white-space: pre-line;
 
     border-radius: 8px;
-    max-width: 400px;
+    max-width: calc(100vw - 240px);
+    max-height: calc(100vh - 40px);
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scrollbar-width: none;
 
     background-color: #2d2d2d;
-}
-
-.card:nth-child(2n) .card-info {
-    transform: translate(200px, 0px);
 }
 
 .card:hover .card-info {
@@ -136,13 +137,18 @@ body {
 }
 
 
-.controllers div .label-title {
+.label-title {
     color: #bdbdbd;
 }
 
-.controllers div .label-value {
+.label-value {
     color: #bdbdbd;
     padding-left: 10px;
+}
+
+.cards:hover~.controllers {
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
 }
 
 
@@ -177,8 +183,32 @@ body {
     border-radius: 6px;
     cursor: pointer;
     outline: none;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.speaker-controller {
+    display: grid;
+    grid-template-columns: 200px 1fr;
 }
 
 .select.speaker-select {
-    width: 30.5%;
+    width: 100%;
+    height: 35px;
+}
+
+.speaker-controller .description {
+    color: #bdbdbd;
+    background-color: #2d2d2d;
+    font-size: 13px;
+    margin-left: 25px;
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    width: calc(100vw - 500px);
+    height: calc(100vh - 380px);
+    white-space: pre-line;
+
+    scrollbar-width: none;
+    overflow-y: scroll;
+
 }
