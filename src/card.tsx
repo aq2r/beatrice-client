@@ -1,18 +1,15 @@
 import { useEffect, useState } from "react";
 import { BeatriceModelInfo, RustInvoke } from "./rustInvoke";
-
-type setState<T> = React.Dispatch<React.SetStateAction<T>>
+import { useAtom, useSetAtom } from "jotai";
+import { jotaiAtoms } from "./atoms";
 
 export const ModelCard = (
-    { modelInfo, selectModel, setSelectModel, setSelectSpeakerIdx }:
-        {
-            modelInfo: BeatriceModelInfo,
-            selectModel: BeatriceModelInfo | null,
-            setSelectModel: setState<BeatriceModelInfo | null>,
-            setSelectSpeakerIdx: setState<number>,
-        }
+    { modelInfo }: { modelInfo: BeatriceModelInfo, }
 ) => {
     const [imageSrc, setImageSrc] = useState("");
+
+    const [selectModel, setSelectModel] = useAtom(jotaiAtoms.selectModel)
+    const setSelectSpeakerIdx = useSetAtom(jotaiAtoms.selectSpeakerIdx)
 
     useEffect(() => {
         const loadImage = async () => {
@@ -39,12 +36,14 @@ export const ModelCard = (
     )
 }
 
-export const SelectDirCard = ({ setModelInfo: setModelInfo }: { setModelInfo: setState<BeatriceModelInfo[]> }) => {
+export const SelectDirCard = () => {
+    const setAllModelInfo = useSetAtom(jotaiAtoms.allModelInfo);
+
     return (
         <div className="card card-select-dir" onClick={async () => {
             try {
                 const modelInfo = await RustInvoke.Beatrice.searchModel();
-                setModelInfo(modelInfo);
+                setAllModelInfo(modelInfo);
             } catch (err) {
                 if (err !== "SelectCanceled") {
                     console.log(err);
