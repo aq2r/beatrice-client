@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { BeatriceModelInfo, RustInvoke } from "./rustInvoke";
-import { useAtom, useSetAtom } from "jotai";
-import { jotaiAtoms } from "./atoms";
+import { BeatriceModelInfo, RustInvoke } from "../rustInvoke";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { jotaiAtoms } from "../atoms";
 
-export const ModelCard = (
+const ModelCard = (
     { modelInfo }: { modelInfo: BeatriceModelInfo, }
 ) => {
     const [imageSrc, setImageSrc] = useState("");
@@ -36,7 +36,7 @@ export const ModelCard = (
     )
 }
 
-export const SelectDirCard = () => {
+const SelectDirCard = () => {
     const setAllModelInfo = useSetAtom(jotaiAtoms.allModelInfo);
 
     return (
@@ -57,4 +57,20 @@ export const SelectDirCard = () => {
             </div>
         </div>
     )
+}
+
+
+export const CardList = () => {
+    const allModelInfo = useAtomValue(jotaiAtoms.allModelInfo);
+
+    return <div className="cards">
+        <SelectDirCard />
+
+        {allModelInfo.map((i) => {
+            return <ModelCard
+                key={i.model_path}
+                modelInfo={i}
+            />;
+        })}
+    </div>
 }
