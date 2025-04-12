@@ -8,8 +8,7 @@ https://prj-beatrice.com/
 
 ## 使用方法
 
-アプリのダウンロード: `---`
-
+アプリのダウンロード: [Releases](https://github.com/aq2r/beatrice-client/releases)
 使用するにはアプリの起動後、左上の `...` から Beatrice の
 
 モデルフォルダーがあるフォルダーを選択し、表示されたモデルを選択します。
