@@ -4,7 +4,7 @@
 
 https://prj-beatrice.com/
 
-<img src="./img/gui.png"/>
+<img src="./img/gui.png" width=500/>
 
 ## 使用方法
 
@@ -17,8 +17,6 @@ https://prj-beatrice.com/
 Beatrice `2.0.0-beta` のモデルに対応しています。
 
 それ以前のモデルには対応していないためご注意ください。
-
-<br>
 
 # License - beatrice
 
@@ -51,3 +49,7 @@ Beatriceの推論ライブラリ `beatrice.lib` を利用しています。
     BSD-3-Clause License
 
     https://github.com/herumi/fmath#license
+
+#
+
+`beatrice_lib` 内のコードは [beatrice-vst](https://github.com/prj-beatrice/beatrice-vst) のコードを参考に作成しました。
