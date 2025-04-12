@@ -18,7 +18,7 @@ Beatrice `2.0.0-beta` のモデルに対応しています。
 
 それ以前のモデルには対応していないためご注意ください。
 
-# License - beatrice
+# License - Beatrice
 
 このアプリ `beatrice-client` は `Project Beatrice` https://prj-beatrice.com/ の許諾を受けて 
 
