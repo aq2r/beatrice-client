@@ -18,6 +18,10 @@ Beatrice `2.0.0-beta` のモデルに対応しています。
 
 それ以前のモデルには対応していないためご注意ください。
 
+## 動作環境
+
+想定環境は Windows 11 です。
+
 # License - Beatrice
 
 このアプリ `beatrice-client` は `Project Beatrice` https://prj-beatrice.com/ の許諾を受けて 
