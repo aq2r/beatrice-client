@@ -2,6 +2,15 @@ use std::path::Path;
 
 use crate::{BeatriceError, beatrice_beta_0::BeatriceBeta0, beatrice_beta_1::BeatriceBeta1};
 
+macro_rules! delegate_method {
+    ($self:expr, $method:ident($($arg:expr),*)) => {
+        match $self {
+            Beatrice::BeatriceBeta0(b) => b.$method($($arg),*),
+            Beatrice::BeatriceBeta1(b) => b.$method($($arg),*),
+        }
+    };
+}
+
 pub enum Beatrice {
     BeatriceBeta0(Box<BeatriceBeta0>),
     BeatriceBeta1(Box<BeatriceBeta1>),
@@ -20,23 +29,12 @@ impl Beatrice {
             _ => return Err(BeatriceError::FileOpenError),
         };
 
-        match &mut beatrice {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => {
-                beatrice_beta0.load_model(&model_path)?;
-            }
-            Beatrice::BeatriceBeta1(beatrice_beta1) => {
-                beatrice_beta1.load_model(&model_path)?;
-            }
-        }
-
+        delegate_method!(&mut beatrice, load_model(&model_path))?;
         Ok(beatrice)
     }
 
     pub fn infer(&mut self, input: &[f32]) -> Result<Vec<f32>, BeatriceError> {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => beatrice_beta0.infer(input),
-            Beatrice::BeatriceBeta1(beatrice_beta1) => beatrice_beta1.infer(input),
-        }
+        delegate_method!(self, infer(input))
     }
 
     pub fn set_input_setting(
@@ -44,14 +42,7 @@ impl Beatrice {
         sample_rate: f64,
         channel: usize,
     ) -> Result<(), rubato::ResamplerConstructionError> {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => {
-                beatrice_beta0.set_input_setting(sample_rate, channel)
-            }
-            Beatrice::BeatriceBeta1(beatrice_beta1) => {
-                beatrice_beta1.set_input_setting(sample_rate, channel)
-            }
-        }
+        delegate_method!(self, set_input_setting(sample_rate, channel))
     }
 
     pub fn set_output_setting(
@@ -59,90 +50,39 @@ impl Beatrice {
         sample_rate: f64,
         channel: usize,
     ) -> Result<(), rubato::ResamplerConstructionError> {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => {
-                beatrice_beta0.set_output_setting(sample_rate, channel)
-            }
-            Beatrice::BeatriceBeta1(beatrice_beta1) => {
-                beatrice_beta1.set_output_setting(sample_rate, channel)
-            }
-        }
+        delegate_method!(self, set_output_setting(sample_rate, channel))
     }
 
     pub fn get_n_speaker(&self) -> Option<i32> {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => beatrice_beta0.get_n_speaker(),
-            Beatrice::BeatriceBeta1(beatrice_beta1) => beatrice_beta1.get_n_speaker(),
-        }
+        delegate_method!(self, get_n_speaker())
     }
 
     pub fn set_target_speaker(&mut self, speaker: u32) -> Result<(), &str> {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => beatrice_beta0.set_target_speaker(speaker),
-            Beatrice::BeatriceBeta1(beatrice_beta1) => beatrice_beta1.set_target_speaker(speaker),
-        }
+        delegate_method!(self, set_target_speaker(speaker))
     }
 
     pub fn set_formant_shift(&mut self, formant_shift: f64) {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => {
-                beatrice_beta0.set_formant_shift(formant_shift)
-            }
-            Beatrice::BeatriceBeta1(beatrice_beta1) => {
-                beatrice_beta1.set_formant_shift(formant_shift)
-            }
-        }
+        delegate_method!(self, set_formant_shift(formant_shift))
     }
 
     pub fn set_pitch_shift(&mut self, pitch_shift: f64) {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => beatrice_beta0.set_pitch_shift(pitch_shift),
-            Beatrice::BeatriceBeta1(beatrice_beta1) => beatrice_beta1.set_pitch_shift(pitch_shift),
-        }
+        delegate_method!(self, set_pitch_shift(pitch_shift))
     }
 
     pub fn set_average_source_pitch(&mut self, average_source_pitch: f64) {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => {
-                beatrice_beta0.set_average_source_pitch(average_source_pitch)
-            }
-            Beatrice::BeatriceBeta1(beatrice_beta1) => {
-                beatrice_beta1.set_average_source_pitch(average_source_pitch)
-            }
-        }
+        delegate_method!(self, set_average_source_pitch(average_source_pitch))
     }
 
     pub fn set_intonation_intensity(&mut self, intonation_intensity: f64) {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => {
-                beatrice_beta0.set_intonation_intensity(intonation_intensity)
-            }
-            Beatrice::BeatriceBeta1(beatrice_beta1) => {
-                beatrice_beta1.set_intonation_intensity(intonation_intensity)
-            }
-        }
+        delegate_method!(self, set_intonation_intensity(intonation_intensity))
     }
 
     pub fn set_pitch_correction(&mut self, pitch_correction: f64) {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => {
-                beatrice_beta0.set_pitch_correction(pitch_correction)
-            }
-            Beatrice::BeatriceBeta1(beatrice_beta1) => {
-                beatrice_beta1.set_pitch_correction(pitch_correction)
-            }
-        }
+        delegate_method!(self, set_pitch_correction(pitch_correction))
     }
 
     pub fn set_pitch_correction_type(&mut self, pitch_correction_type: i32) {
-        match self {
-            Beatrice::BeatriceBeta0(beatrice_beta0) => {
-                beatrice_beta0.set_pitch_correction_type(pitch_correction_type)
-            }
-            Beatrice::BeatriceBeta1(beatrice_beta1) => {
-                beatrice_beta1.set_pitch_correction_type(pitch_correction_type)
-            }
-        }
+        delegate_method!(self, set_pitch_correction_type(pitch_correction_type))
     }
 
     fn get_model_version(model_path: impl AsRef<Path>) -> Result<String, BeatriceError> {
