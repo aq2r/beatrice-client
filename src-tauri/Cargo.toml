@@ -25,4 +25,4 @@ cpal = "0.15.3"
 anyhow = "1.0.97"
 ringbuf = "0.4.8"
 base64 = "0.22.1"
-toml = "0.8.20"
+toml = { workspace = true }

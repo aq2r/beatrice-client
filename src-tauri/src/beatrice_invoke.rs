@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Context;
-use beatrice_lib::Beatrice;
+use beatrice_lib::{Beatrice, BeatriceError};
 use serde::{Deserialize, Serialize};
 use tauri::Runtime;
 use tauri_plugin_dialog::DialogExt as _;
@@ -12,16 +12,19 @@ use tauri_plugin_store::StoreExt as _;
 
 /* Voice Changer */
 
-pub static BEATRICE: LazyLock<Mutex<Beatrice>> = LazyLock::new(|| Mutex::new(Beatrice::new()));
+pub static BEATRICE: LazyLock<Mutex<Option<Beatrice>>> = LazyLock::new(|| Mutex::new(None));
 
 #[tauri::command]
 pub async fn beatrice_load_model(model_path: String) -> Result<(), String> {
     let mut beatrice = BEATRICE.lock().unwrap();
 
-    beatrice.reset_context();
-    if let Err(err) = beatrice.load_model(&model_path) {
-        return Err(err.to_string());
-    };
+    match Beatrice::load_model(&model_path) {
+        Ok(model) => *beatrice = Some(model),
+        Err(err) => {
+            *beatrice = None;
+            return Err(err.to_string());
+        }
+    }
 
     Ok(())
 }
@@ -29,51 +32,94 @@ pub async fn beatrice_load_model(model_path: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn beatrice_get_nspeaker() -> Option<i32> {
     let beatrice = BEATRICE.lock().unwrap();
+    let beatrice = beatrice.as_ref()?;
+
     beatrice.get_n_speaker()
 }
 
 #[tauri::command]
 pub async fn beatrice_set_target_speaker(target: i32) -> Result<(), String> {
     let mut beatrice = BEATRICE.lock().unwrap();
+
+    let Some(beatrice) = beatrice.as_mut() else {
+        return Err(BeatriceError::ModelNotLoaded.to_string());
+    };
+
     beatrice
         .set_target_speaker(target as u32)
         .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
-pub async fn beatrice_set_pitch(pitch: f64) {
+pub async fn beatrice_set_pitch(pitch: f64) -> Result<(), String> {
     let mut beatrice = BEATRICE.lock().unwrap();
+
+    let Some(beatrice) = beatrice.as_mut() else {
+        return Err(BeatriceError::ModelNotLoaded.to_string());
+    };
+
     beatrice.set_pitch_shift(pitch);
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn beatrice_set_formant_shift(formant: f64) {
+pub async fn beatrice_set_formant_shift(formant: f64) -> Result<(), String> {
     let mut beatrice = BEATRICE.lock().unwrap();
+
+    let Some(beatrice) = beatrice.as_mut() else {
+        return Err(BeatriceError::ModelNotLoaded.to_string());
+    };
+
     beatrice.set_formant_shift(formant);
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn beatrice_set_average_source_pitch(average_source_pitch: f64) {
+pub async fn beatrice_set_average_source_pitch(average_source_pitch: f64) -> Result<(), String> {
     let mut beatrice = BEATRICE.lock().unwrap();
+
+    let Some(beatrice) = beatrice.as_mut() else {
+        return Err(BeatriceError::ModelNotLoaded.to_string());
+    };
+
     beatrice.set_average_source_pitch(average_source_pitch);
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn beatrice_set_intonation_intensity(intonation_intensity: f64) {
+pub async fn beatrice_set_intonation_intensity(intonation_intensity: f64) -> Result<(), String> {
     let mut beatrice = BEATRICE.lock().unwrap();
+
+    let Some(beatrice) = beatrice.as_mut() else {
+        return Err(BeatriceError::ModelNotLoaded.to_string());
+    };
+
     beatrice.set_intonation_intensity(intonation_intensity);
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn beatrice_set_pitch_correction(pitch_correction: f64) {
+pub async fn beatrice_set_pitch_correction(pitch_correction: f64) -> Result<(), String> {
     let mut beatrice = BEATRICE.lock().unwrap();
+
+    let Some(beatrice) = beatrice.as_mut() else {
+        return Err(BeatriceError::ModelNotLoaded.to_string());
+    };
+
     beatrice.set_pitch_correction(pitch_correction);
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn beatrice_set_pitch_correction_type(pitch_correction_type: i32) {
+pub async fn beatrice_set_pitch_correction_type(pitch_correction_type: i32) -> Result<(), String> {
     let mut beatrice = BEATRICE.lock().unwrap();
+
+    let Some(beatrice) = beatrice.as_mut() else {
+        return Err(BeatriceError::ModelNotLoaded.to_string());
+    };
+
     beatrice.set_pitch_correction_type(pitch_correction_type);
+    Ok(())
 }
 
 /* model search */

@@ -19,6 +19,12 @@ pub enum BeatriceError {
     #[error("InvalidFileSize")]
     InvalidFileSize,
 
+    #[error("IO Error: {0}")]
+    IOError(#[from] std::io::Error),
+
+    #[error("toml deserialize Error: {0}")]
+    TomlError(#[from] toml::de::Error),
+
     #[error("NulError: {0}")]
     NulError(#[from] NulError),
 }

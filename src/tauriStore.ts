@@ -9,8 +9,8 @@ export const tauriStoreModelPathKey = "tauriStoreModelPath";
 
 export const tauriStorSlidersKey = "tauriStoreSliders";
 export interface TauriStoreSliders {
-    pitch: number,
-    inputGain: number,
-    outputGain: number,
-    formantShift: number,
+    pitch: number | null,
+    inputGain: number | null,
+    outputGain: number | null,
+    formantShift: number | null,
 }
