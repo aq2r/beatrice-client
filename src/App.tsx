@@ -75,10 +75,10 @@ function BeatriceEffects() {
 
             const storeSlider = await store.get<TauriStoreSliders>(tauriStorSlidersKey);
             if (storeSlider) {
-                setPitch(storeSlider.pitch);
-                setInputGain(storeSlider.inputGain);
-                setOutputGain(storeSlider.outputGain);
-                setFormantShift(storeSlider.formantShift);
+                setPitch(storeSlider.pitch || 0.0);
+                setInputGain(storeSlider.inputGain || 1.0);
+                setOutputGain(storeSlider.outputGain || 1.0);
+                setFormantShift(storeSlider.formantShift || 0.0);
             }
 
         };
