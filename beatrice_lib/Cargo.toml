@@ -8,6 +8,7 @@ publish = false
 rubato = "0.16.1"
 thiserror = "2.0.12"
 ringbuf = "0.4.8"
+toml = { workspace = true }
 
 [build-dependencies]
 reqwest = { version = "0.12.15", features = ["blocking"] }

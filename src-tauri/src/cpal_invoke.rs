@@ -130,12 +130,13 @@ fn start_voice_changer(
 
         {
             let mut beatrice = BEATRICE.lock().unwrap();
-            beatrice
-                .set_input_setting(
+
+            if let Some(beatrice) = beatrice.as_mut() {
+                beatrice.set_input_setting(
                     input_config.sample_rate().0.into(),
                     input_config.channels().into(),
-                )
-                .expect("failed");
+                )?;
+            };
         }
 
         input_device.build_input_stream(
@@ -151,9 +152,14 @@ fn start_voice_changer(
 
                 let mut result = {
                     let mut beatrice = BEATRICE.lock().unwrap();
-                    beatrice
-                        .infer(&input_buffer)
-                        .unwrap_or_else(|_| vec![0.0; data.len()])
+
+                    match beatrice.as_mut() {
+                        Some(beatrice) => beatrice
+                            .infer(&input_buffer)
+                            .unwrap_or_else(|_| vec![0.0; data.len()]),
+
+                        None => vec![0.0; data.len()],
+                    }
                 };
 
                 let output_gain = { *OUTPUT_GAIN.lock().unwrap() };
@@ -199,12 +205,13 @@ fn start_voice_changer(
 
             {
                 let mut beatrice = BEATRICE.lock().unwrap();
-                beatrice
-                    .set_output_setting(
+
+                if let Some(beatrice) = beatrice.as_mut() {
+                    beatrice.set_output_setting(
                         output_config.sample_rate().0.into(),
                         output_config.channels().into(),
-                    )
-                    .expect("failed");
+                    )?;
+                };
             }
 
             Some(output_device.build_output_stream(

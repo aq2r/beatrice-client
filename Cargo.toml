@@ -4,3 +4,4 @@ members = ["beatrice_lib", "src-tauri"]
 
 [workspace.dependencies]
 beatrice_lib = { path = "beatrice_lib" }
+toml = "0.8.20"
