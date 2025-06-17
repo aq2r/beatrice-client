@@ -89,19 +89,20 @@ function BeatriceEffects() {
         const promise = async () => {
             if (selectModel === null) { return; }
 
+            await RustInvoke.Beatrice.loadModel(selectModel.model_path);
+            await RustInvoke.Beatrice.setAverageSourcePitch(selectModel.voices[0].average_pitch);
+            await RustInvoke.Beatrice.setSpeaker(selectSpeakerIdx);
+
+            // 最初だけピッチやフォルマントがおかしくなるのを臨時で修正 (あまりよくないけど)
             if (tauriStore) {
                 const storeSlider = await tauriStore.get<TauriStoreSliders>(tauriStorSlidersKey);
                 if (storeSlider) {
-                    setPitch(storeSlider.pitch || 0.0);
-                    setInputGain(storeSlider.inputGain || 1.0);
-                    setOutputGain(storeSlider.outputGain || 1.0);
-                    setFormantShift(storeSlider.formantShift || 0.0);
+                    RustInvoke.Cpal.setInputGain(storeSlider.inputGain || 0.0);
+                    RustInvoke.Cpal.setOutputGain(storeSlider.outputGain || 1.0);
+                    RustInvoke.Beatrice.setPitch(storeSlider.pitch || 1.0);
+                    RustInvoke.Beatrice.setFormantShift(storeSlider.formantShift || 0.0);
                 }
             }
-
-            RustInvoke.Beatrice.loadModel(selectModel.model_path);
-            RustInvoke.Beatrice.setAverageSourcePitch(selectModel.voices[0].average_pitch);
-            RustInvoke.Beatrice.setSpeaker(selectSpeakerIdx);
         }
         promise()
     }, [selectModel, selectSpeakerIdx]);
