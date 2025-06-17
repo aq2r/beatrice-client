@@ -80,18 +80,30 @@ function BeatriceEffects() {
                 setOutputGain(storeSlider.outputGain || 1.0);
                 setFormantShift(storeSlider.formantShift || 0.0);
             }
-
         };
         promise()
     }, [])
 
     // モデルと話者変更時
     useEffect(() => {
-        if (selectModel === null) { return; }
+        const promise = async () => {
+            if (selectModel === null) { return; }
 
-        RustInvoke.Beatrice.loadModel(selectModel.model_path);
-        RustInvoke.Beatrice.setAverageSourcePitch(selectModel.voices[0].average_pitch);
-        RustInvoke.Beatrice.setSpeaker(selectSpeakerIdx);
+            if (tauriStore) {
+                const storeSlider = await tauriStore.get<TauriStoreSliders>(tauriStorSlidersKey);
+                if (storeSlider) {
+                    setPitch(storeSlider.pitch || 0.0);
+                    setInputGain(storeSlider.inputGain || 1.0);
+                    setOutputGain(storeSlider.outputGain || 1.0);
+                    setFormantShift(storeSlider.formantShift || 0.0);
+                }
+            }
+
+            RustInvoke.Beatrice.loadModel(selectModel.model_path);
+            RustInvoke.Beatrice.setAverageSourcePitch(selectModel.voices[0].average_pitch);
+            RustInvoke.Beatrice.setSpeaker(selectSpeakerIdx);
+        }
+        promise()
     }, [selectModel, selectSpeakerIdx]);
 
     // 入出力の変更時
