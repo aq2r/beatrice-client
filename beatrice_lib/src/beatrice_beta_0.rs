@@ -30,8 +30,8 @@ impl Default for BeatriceInfo {
     fn default() -> Self {
         Self {
             target_speaker: 0,
-            formant_shift: 1.0,
-            pitch_shift: 16.0,
+            formant_shift: 0.0,
+            pitch_shift: 0.0,
             n_speakers: 0,
             average_source_pitch: 60.0,
             intonation_intensity: 1.0,
