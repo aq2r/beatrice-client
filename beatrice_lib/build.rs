@@ -7,7 +7,7 @@ fn main() {
     let lib_path = PathBuf::from("lib/beatrice.lib");
 
     if !lib_path.exists() {
-        let lib_url = "https://huggingface.co/fierce-cats/beatrice-2.0.0-alpha/resolve/beta.1/beta.1/beatrice.lib";
+        let lib_url = "https://huggingface.co/fierce-cats/beatrice-2.0.0-alpha/resolve/rc.0/rc.0/beatrice.lib";
         let response = Client::new()
             .get(lib_url)
             .send()

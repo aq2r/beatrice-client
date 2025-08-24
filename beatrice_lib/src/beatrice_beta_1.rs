@@ -263,11 +263,11 @@ impl BeatriceBeta1 {
         self.model.as_ref().map(|_| self.info.n_speakers)
     }
 
-    pub fn set_target_speaker(&mut self, speaker: u32) -> Result<(), &str> {
+    pub fn set_target_speaker(&mut self, speaker: u32) -> Result<(), BeatriceError> {
         let speaker = speaker as i32;
 
         if (self.info.n_speakers - 1) < speaker {
-            return Err("OutOfRange");
+            return Err(BeatriceError::SpeakerOutOfRange);
         }
 
         self.info.target_speaker = speaker;
@@ -303,7 +303,7 @@ impl BeatriceBeta1 {
         &mut self,
         input: &[f32; BEATRICE_IN_HOP_LENGTH],
     ) -> Result<[f32; BEATRICE_OUT_HOP_LENGTH], BeatriceError> {
-        let mut phone = [0.0_f32; BEATRICE_PHONE_CHANNELS];
+        let mut phone = [0.0_f32; BEATRICE_20B1_PHONE_CHANNELS];
         unsafe {
             Beatrice20b1_ExtractPhone1(
                 self.lib.phone_extractor,
@@ -399,7 +399,7 @@ impl BeatriceBeta1 {
 
         quantized_pitch = {
             let rounded = tmp_quantized_pitch.round() as i32;
-            rounded.clamp(1, BEATRICE_PITCH_BINS as i32 - 1)
+            rounded.clamp(1, BEATRICE_20B1_PITCH_BINS as i32 - 1)
         };
 
         // speaker

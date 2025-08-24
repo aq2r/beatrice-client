@@ -13,7 +13,6 @@ body {
     display: flex;
     height: 100vh;
 
-
     overflow-y: hidden;
     overflow-x: hidden;
 }
@@ -132,7 +131,7 @@ body {
     box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.5);
     scrollbar-width: none;
 
-    overflow-y: scroll;
+    overflow-y: hidden;
     overflow-x: hidden;
 }
 
@@ -153,12 +152,19 @@ body {
 
 
 .device-controllers {
-    padding-top: 15px;
+    padding-top: 5px;
     display: flex;
     justify-content: space-between;
     width: 100%;
 }
 
+.sliders {
+    height: 215px;
+    padding-right: 10px;
+    overflow-y: auto;
+    scrollbar-color: #000000 #3a3a3a; 
+    scrollbar-width: thin; 
+}
 
 .slider {
     appearance: none;
@@ -172,6 +178,13 @@ body {
     transform: translate(0px, -3px);
 }
 
+.advanced-setting-button {
+    color: #bdbdbd;
+}
+
+.advanced-setting-button input {
+    margin-right: 5px;
+}
 
 .select {
     width: 90%;
@@ -211,7 +224,7 @@ body {
     border-radius: 6px;
     box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     width: calc(100vw - 500px);
-    height: calc(100vh - 390px);
+    height: calc(100vh - 410px);
     white-space: pre-line;
 
     scrollbar-width: none;
@@ -251,7 +264,7 @@ body {
     border-radius: 6px;
     box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     width: calc(100vw - 500px);
-    height: calc(100vh - 390px);
+    height: calc(100vh - 410px);
     white-space: pre-line;
     z-index: 100;
 

@@ -7,6 +7,9 @@ pub enum BeatriceError {
     #[error("ModelNotLoaded")]
     ModelNotLoaded,
 
+    #[error("SpeakerOutOfRange")]
+    SpeakerOutOfRange,
+
     #[error("FileOpenError")]
     FileOpenError,
 

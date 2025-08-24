@@ -1,6 +1,6 @@
 # beatrice-client
 
-ボイスチェンジャー `Beatrice`  の GUI です。 
+ボイスチェンジャー `Beatrice` の GUI です。
 
 https://prj-beatrice.com/
 
@@ -16,7 +16,7 @@ https://prj-beatrice.com/
 
 ※ モデルフォルダーを直接選択するのではなくモデルフォルダーの一つ上のフォルダーを選択してください。
 
-Beatrice `2.0.0-beta0` ~ `2.0.0-beta4` のモデルに対応しています。
+Beatrice `2.0.0-beta.0` ~ `2.0.0-rc.0` のモデルに対応しています。
 
 ## 動作環境
 
@@ -24,9 +24,9 @@ Beatrice `2.0.0-beta0` ~ `2.0.0-beta4` のモデルに対応しています。
 
 # License - Beatrice
 
-このアプリ `beatrice-client` は `Project Beatrice` https://prj-beatrice.com/ の許諾を受けて 
+このアプリ `beatrice-client` は `Project Beatrice` https://prj-beatrice.com/ の許諾を受けて
 
-Beatriceの推論ライブラリ `beatrice.lib` を利用しています。
+Beatrice の推論ライブラリ `beatrice.lib` を利用しています。
 
 この許諾は、`beatrice-client` の開発に要する合理的な範囲での利用及び
 
@@ -40,19 +40,19 @@ Beatriceの推論ライブラリ `beatrice.lib` を利用しています。
 
 - PocketFFT
 
-    Copyright 2010-2018 Max-Planck-Society
+  Copyright 2010-2018 Max-Planck-Society
 
-    BSD-3-Clause License
+  BSD-3-Clause License
 
-    https://gitlab.mpcdf.mpg.de/mtr/pocketfft/-/blob/cpp/LICENSE.md
+  https://gitlab.mpcdf.mpg.de/mtr/pocketfft/-/blob/cpp/LICENSE.md
 
 - fmath
 
-    Copyright MITSUNARI Shigeo
+  Copyright MITSUNARI Shigeo
 
-    BSD-3-Clause License
+  BSD-3-Clause License
 
-    https://github.com/herumi/fmath#license
+  https://github.com/herumi/fmath#license
 
 #
 

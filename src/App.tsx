@@ -29,10 +29,21 @@ function BeatriceEffects() {
     const selectModel = useAtomValue(jotaiAtoms.selectModel)
     const selectSpeakerIdx = useAtomValue(jotaiAtoms.selectSpeakerIdx)
 
+    const setLoadedModelVersion = useSetAtom(jotaiAtoms.loadedModelVersion);
+
     const [pitch, setPitch] = useAtom(jotaiAtoms.pitch);
     const [formantShift, setFormantShift] = useAtom(jotaiAtoms.formantShift);
     const [inputGain, setInputGain] = useAtom(jotaiAtoms.inputGain);
     const [outputGain, setOutputGain] = useAtom(jotaiAtoms.outputGain);
+    
+    const [isDisplayAdvancedSettings, setIsDisplayAdvancedSettings] = useAtom(jotaiAtoms.isDisplayAdvancedSettings);
+    const [averageSourcePitch, setAverageSourcePitch] = useAtom(jotaiAtoms.averageSourcePitch);
+    const [intonationIntensity, setIntonationIntensity] = useAtom(jotaiAtoms.intonationIntensity);
+    const [pitchCorrection, setPitchCorrection] = useAtom(jotaiAtoms.pitchCorrection);
+    const [pitchCorrectionType, setPitchCorrectionType] = useAtom(jotaiAtoms.pitchCorrectionType);
+    const [minSourcePitch, setMinSourcePitch] = useAtom(jotaiAtoms.minSourcePitch);
+    const [maxSourcePitch, setMaxSourcePitch] = useAtom(jotaiAtoms.maxSourcePitch);
+    const [vqNumNeighbors, setVqNumNeighbors] = useAtom(jotaiAtoms.vqNumNeighbors);
 
     const setInputDevices = useSetAtom(jotaiAtoms.inputDevices);
     const setOutputDevices = useSetAtom(jotaiAtoms.outputDevices);
@@ -79,6 +90,15 @@ function BeatriceEffects() {
                 setInputGain(storeSlider.inputGain || 1.0);
                 setOutputGain(storeSlider.outputGain || 1.0);
                 setFormantShift(storeSlider.formantShift || 0.0);
+
+                setIsDisplayAdvancedSettings(storeSlider.isDisplayAdvancedSettings || false);
+                setAverageSourcePitch(storeSlider.averageSourcePitch || 52.0);
+                setIntonationIntensity(storeSlider.intonationIntensity || 1.0);
+                setPitchCorrection(storeSlider.pitchCorrection || 0.0);
+                setPitchCorrectionType(storeSlider.pitchCorrectionType || 0);
+                setMinSourcePitch(storeSlider.minSourcePitch || 33.125);
+                setMaxSourcePitch(storeSlider.maxSourcePitch || 80.875);
+                setVqNumNeighbors(storeSlider.vqNumNeighbors || 0);
             }
         };
         promise()
@@ -90,8 +110,11 @@ function BeatriceEffects() {
             if (selectModel === null) { return; }
 
             await RustInvoke.Beatrice.loadModel(selectModel.model_path);
-            await RustInvoke.Beatrice.setAverageSourcePitch(selectModel.voices[0].average_pitch);
+            setLoadedModelVersion(await RustInvoke.Beatrice.getModelVersion());
+            await RustInvoke.Beatrice.setAverageSourcePitch(selectModel.voices[selectSpeakerIdx].average_pitch);
+            setAverageSourcePitch(selectModel.voices[selectSpeakerIdx].average_pitch);
             await RustInvoke.Beatrice.setSpeaker(selectSpeakerIdx);
+
 
             // 最初だけピッチやフォルマントがおかしくなるのを臨時で修正 (あまりよくないけど)
             if (tauriStore) {
@@ -101,6 +124,14 @@ function BeatriceEffects() {
                     RustInvoke.Cpal.setOutputGain(storeSlider.outputGain || 1.0);
                     RustInvoke.Beatrice.setPitch(storeSlider.pitch || 1.0);
                     RustInvoke.Beatrice.setFormantShift(storeSlider.formantShift || 0.0);
+
+                    RustInvoke.Beatrice.setAverageSourcePitch(storeSlider.averageSourcePitch || 52.0);
+                    RustInvoke.Beatrice.setIntonationIntensity(storeSlider.intonationIntensity || 1.0);
+                    RustInvoke.Beatrice.setPitchCorrection(storeSlider.pitchCorrection || 0.0);
+                    RustInvoke.Beatrice.setPitchCorrectionType(storeSlider.pitchCorrectionType || 0);
+                    RustInvoke.Beatrice.setMinSourcePitch(storeSlider.minSourcePitch || 33.125);
+                    RustInvoke.Beatrice.setMaxSourcePitch(storeSlider.maxSourcePitch || 80.875);
+                    RustInvoke.Beatrice.setVqNumNeighbors(storeSlider.vqNumNeighbors || 0);
                 }
             }
         }
@@ -122,14 +153,23 @@ function BeatriceEffects() {
         RustInvoke.Cpal.startVoiceChanger(selectInputDevice, selectOutputDevice, selectMonitorDevice)
     }, [selectInputDevice, selectOutputDevice, selectMonitorDevice])
 
-    // 入出力音量の変更時
+    // 入出力音量などの変更時
     useEffect(() => {
         if (tauriStore) {
             const storeValue: TauriStoreSliders = {
                 pitch: pitch,
                 inputGain: inputGain,
                 outputGain: outputGain,
-                formantShift: formantShift
+                formantShift: formantShift,
+
+                isDisplayAdvancedSettings: isDisplayAdvancedSettings,
+                averageSourcePitch: averageSourcePitch,
+                intonationIntensity: intonationIntensity,
+                pitchCorrection: pitchCorrection,
+                pitchCorrectionType: pitchCorrectionType,
+                minSourcePitch: minSourcePitch,
+                maxSourcePitch: maxSourcePitch,
+                vqNumNeighbors: vqNumNeighbors
             };
 
             tauriStore.set(tauriStorSlidersKey, storeValue);
@@ -139,7 +179,17 @@ function BeatriceEffects() {
         RustInvoke.Cpal.setOutputGain(outputGain);
         RustInvoke.Beatrice.setPitch(pitch);
         RustInvoke.Beatrice.setFormantShift(formantShift);
-    }, [pitch, inputGain, outputGain, formantShift])
+
+        RustInvoke.Beatrice.setAverageSourcePitch(averageSourcePitch);
+        RustInvoke.Beatrice.setIntonationIntensity(intonationIntensity);
+        RustInvoke.Beatrice.setPitchCorrection(pitchCorrection);
+        RustInvoke.Beatrice.setPitchCorrectionType(pitchCorrectionType);
+        RustInvoke.Beatrice.setMinSourcePitch(minSourcePitch);
+        RustInvoke.Beatrice.setMaxSourcePitch(maxSourcePitch);
+        RustInvoke.Beatrice.setVqNumNeighbors(vqNumNeighbors);
+    }, [pitch, inputGain, outputGain, formantShift, 
+        isDisplayAdvancedSettings, averageSourcePitch, intonationIntensity,
+        pitchCorrection, pitchCorrectionType, minSourcePitch, maxSourcePitch, vqNumNeighbors])
 
     return <></>
 }

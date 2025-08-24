@@ -52,11 +52,11 @@ export interface BeatriceModelInfo {
 
 class Beatrice {
     static loadModel = async (modelPath: string) => {
-        try {
-            await invoke<void>("beatrice_load_model", { modelPath: modelPath })
-        } catch (err) {
-            console.log(err)
-        }
+        await invoke<void>("beatrice_load_model", { modelPath: modelPath })
+    }
+
+    static getModelVersion = async () => {
+        return await invoke<string | null>("beatrice_get_version");
     }
 
     static setSpeaker = async (speakerIdx: number) => {
@@ -95,13 +95,30 @@ class Beatrice {
         })
     }
 
+    static setMinSourcePitch = async (minSourcePitch: number) => {
+        await invoke<void>("beatrice_set_min_source_pitch", {
+            minSourcePitch: minSourcePitch
+        })
+    }
+
+    static setMaxSourcePitch = async (maxSourcePitch: number) => {
+        await invoke<void>("beatrice_set_max_source_pitch", {
+            maxSourcePitch: maxSourcePitch
+        })
+    }
+
+    static setVqNumNeighbors = async (vqNumNeighbors: number) => {
+        await invoke<void>("beatrice_set_vq_num_neighbors", {
+            vqNumNeighbors: vqNumNeighbors
+        })
+    }
+
     static searchModel = async (modelPath?: string) => {
         if (modelPath) {
             return await invoke<BeatriceModelInfo[]>("beatrice_search_model", { inputFolderPath: modelPath });
         } else {
             return await invoke<BeatriceModelInfo[]>("beatrice_search_model");
         }
-
     }
 }
 

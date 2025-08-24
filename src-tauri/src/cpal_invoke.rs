@@ -173,7 +173,7 @@ fn start_voice_changer(
                 output_producer.push_slice(&input_buffer);
                 monitor_producer.push_slice(&input_buffer);
             },
-            |err| eprintln!("入力エラー: {}", err),
+            |err| eprintln!("入力エラー: {err}"),
             None,
         )?
     };
@@ -219,7 +219,7 @@ fn start_voice_changer(
                 move |data: &mut [f32], _: &_| {
                     output_consumer.pop_slice(data);
                 },
-                |err| eprintln!("出力エラー: {}", err),
+                |err| eprintln!("出力エラー: {err}"),
                 None,
             )?)
         }
@@ -257,7 +257,7 @@ fn start_voice_changer(
                 move |data: &mut [f32], _: &_| {
                     monitor_consumer.pop_slice(data);
                 },
-                |err| eprintln!("出力エラー: {}", err),
+                |err| eprintln!("出力エラー: {err}"),
                 None,
             )?)
         }
