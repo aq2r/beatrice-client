@@ -1,6 +1,7 @@
 mod beatrice;
 mod beatrice_beta_0;
 mod beatrice_beta_1;
+mod beatrice_rc_0;
 mod bindings;
 mod errors;
 mod resamplers;

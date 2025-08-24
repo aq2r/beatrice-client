@@ -51,76 +51,86 @@ pub async fn beatrice_set_target_speaker(target: i32) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn beatrice_set_pitch(pitch: f64) -> Result<(), String> {
+pub async fn beatrice_get_version() -> Option<String> {
     let mut beatrice = BEATRICE.lock().unwrap();
 
-    let Some(beatrice) = beatrice.as_mut() else {
-        return Err(BeatriceError::ModelNotLoaded.to_string());
-    };
-
-    beatrice.set_pitch_shift(pitch);
-    Ok(())
+    Some(beatrice.as_mut()?
+            .get_model_version())
 }
 
-#[tauri::command]
-pub async fn beatrice_set_formant_shift(formant: f64) -> Result<(), String> {
-    let mut beatrice = BEATRICE.lock().unwrap();
+macro_rules! beatrice_command {
+    (
+        $fn_name:ident, 
+        $method:ident, 
+        $arg:ident : $ty:ty
+    ) => {
+        #[tauri::command]
+        pub async fn $fn_name($arg: $ty) -> Result<(), String> {
+            let mut beatrice = BEATRICE.lock().unwrap();
 
-    let Some(beatrice) = beatrice.as_mut() else {
-        return Err(BeatriceError::ModelNotLoaded.to_string());
+            let Some(beatrice) = beatrice.as_mut() else {
+                return Err(BeatriceError::ModelNotLoaded.to_string());
+            };
+
+            beatrice.$method($arg);
+            Ok(())
+        }
     };
-
-    beatrice.set_formant_shift(formant);
-    Ok(())
 }
 
-#[tauri::command]
-pub async fn beatrice_set_average_source_pitch(average_source_pitch: f64) -> Result<(), String> {
-    let mut beatrice = BEATRICE.lock().unwrap();
+beatrice_command!(
+    beatrice_set_pitch,
+    set_pitch_shift,
+    pitch: f64
+);
 
-    let Some(beatrice) = beatrice.as_mut() else {
-        return Err(BeatriceError::ModelNotLoaded.to_string());
-    };
+beatrice_command!(
+    beatrice_set_formant_shift,
+    set_formant_shift,
+    formant: f64
+);
 
-    beatrice.set_average_source_pitch(average_source_pitch);
-    Ok(())
-}
+beatrice_command!(
+    beatrice_set_average_source_pitch,
+    set_average_source_pitch,
+    average_source_pitch: f64
+);
 
-#[tauri::command]
-pub async fn beatrice_set_intonation_intensity(intonation_intensity: f64) -> Result<(), String> {
-    let mut beatrice = BEATRICE.lock().unwrap();
+beatrice_command!(
+    beatrice_set_intonation_intensity, 
+    set_intonation_intensity, 
+    intonation_intensity: f64
+);
 
-    let Some(beatrice) = beatrice.as_mut() else {
-        return Err(BeatriceError::ModelNotLoaded.to_string());
-    };
+beatrice_command!(
+    beatrice_set_pitch_correction, 
+    set_pitch_correction, 
+    pitch_correction: f64
+);
 
-    beatrice.set_intonation_intensity(intonation_intensity);
-    Ok(())
-}
+beatrice_command!(
+    beatrice_set_pitch_correction_type, 
+    set_pitch_correction_type, 
+    pitch_correction_type: i32
+);
 
-#[tauri::command]
-pub async fn beatrice_set_pitch_correction(pitch_correction: f64) -> Result<(), String> {
-    let mut beatrice = BEATRICE.lock().unwrap();
+beatrice_command!(
+    beatrice_set_min_source_pitch,
+    set_min_source_pitch,
+    min_source_pitch: f64
+);
 
-    let Some(beatrice) = beatrice.as_mut() else {
-        return Err(BeatriceError::ModelNotLoaded.to_string());
-    };
+beatrice_command!(
+    beatrice_set_max_source_pitch,
+    set_max_source_pitch,
+    max_source_pitch: f64
+);
 
-    beatrice.set_pitch_correction(pitch_correction);
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn beatrice_set_pitch_correction_type(pitch_correction_type: i32) -> Result<(), String> {
-    let mut beatrice = BEATRICE.lock().unwrap();
-
-    let Some(beatrice) = beatrice.as_mut() else {
-        return Err(BeatriceError::ModelNotLoaded.to_string());
-    };
-
-    beatrice.set_pitch_correction_type(pitch_correction_type);
-    Ok(())
-}
+beatrice_command!(
+    beatrice_set_vq_num_neighbors,
+    set_vq_num_neighbors,
+    vq_num_neighbors: i32
+);
 
 /* model search */
 
@@ -176,7 +186,7 @@ pub async fn beatrice_search_model<R: Runtime>(
             continue;
         }
 
-        let model_files = [
+        let beta_model_files = [
             "formant_shift_embeddings.bin",
             "phone_extractor.bin",
             "pitch_estimator.bin",
@@ -184,10 +194,23 @@ pub async fn beatrice_search_model<R: Runtime>(
             "waveform_generator.bin",
         ];
 
-        if !model_files
+        let rc_model_files = [
+            "speaker_embeddings.bin",
+            "waveform_generator.bin",
+            "embedding_setter.bin",
+            "embedding_setter.bin",
+            "pitch_estimator.bin",
+        ];
+
+        let is_beta_files_exists = beta_model_files
             .into_iter()
-            .all(|file| folder_path.join(file).exists())
-        {
+            .all(|f| folder_path.join(f).exists());
+
+        let is_rc_files_exists = rc_model_files
+            .into_iter()
+            .all(|f| folder_path.join(f).exists());
+
+        if !(is_beta_files_exists || is_rc_files_exists) {
             continue;
         }
 

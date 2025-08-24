@@ -24,6 +24,10 @@ pub fn run() {
             beatrice_invoke::beatrice_set_pitch_correction,
             beatrice_invoke::beatrice_set_pitch_correction_type,
             beatrice_invoke::beatrice_search_model,
+            beatrice_invoke::beatrice_set_min_source_pitch,
+            beatrice_invoke::beatrice_set_max_source_pitch,
+            beatrice_invoke::beatrice_set_vq_num_neighbors,
+            beatrice_invoke::beatrice_get_version,
             other_invoke::other_read_image,
         ])
         .run(tauri::generate_context!())

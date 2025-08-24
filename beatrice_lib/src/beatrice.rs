@@ -1,12 +1,16 @@
 use std::path::Path;
 
-use crate::{BeatriceError, beatrice_beta_0::BeatriceBeta0, beatrice_beta_1::BeatriceBeta1};
+use crate::{
+    BeatriceError, beatrice_beta_0::BeatriceBeta0, beatrice_beta_1::BeatriceBeta1,
+    beatrice_rc_0::BeatriceRC0,
+};
 
 macro_rules! delegate_method {
     ($self:expr, $method:ident($($arg:expr),*)) => {
         match $self {
             Beatrice::BeatriceBeta0(b) => b.$method($($arg),*),
             Beatrice::BeatriceBeta1(b) => b.$method($($arg),*),
+            Beatrice::BeatriceRC0(b) =>  b.$method($($arg),*),
         }
     };
 }
@@ -14,13 +18,15 @@ macro_rules! delegate_method {
 pub enum Beatrice {
     BeatriceBeta0(Box<BeatriceBeta0>),
     BeatriceBeta1(Box<BeatriceBeta1>),
+    BeatriceRC0(Box<BeatriceRC0>),
 }
 
 impl Beatrice {
     pub fn load_model(model_path: impl AsRef<Path>) -> Result<Beatrice, BeatriceError> {
-        let model_version = Self::get_model_version(&model_path)?;
+        let model_version = Self::internal_get_model_version(&model_path)?;
 
         let mut beatrice = match model_version.as_str() {
+            "2.0.0-rc.0" => Beatrice::BeatriceRC0(BeatriceRC0::new().into()),
             "2.0.0-beta.1" => Beatrice::BeatriceBeta1(BeatriceBeta1::new().into()),
             v if v.starts_with("2.0.0-alpha") => {
                 Beatrice::BeatriceBeta0(BeatriceBeta0::new().into())
@@ -57,7 +63,7 @@ impl Beatrice {
         delegate_method!(self, get_n_speaker())
     }
 
-    pub fn set_target_speaker(&mut self, speaker: u32) -> Result<(), &str> {
+    pub fn set_target_speaker(&mut self, speaker: u32) -> Result<(), BeatriceError> {
         delegate_method!(self, set_target_speaker(speaker))
     }
 
@@ -85,7 +91,33 @@ impl Beatrice {
         delegate_method!(self, set_pitch_correction_type(pitch_correction_type))
     }
 
-    fn get_model_version(model_path: impl AsRef<Path>) -> Result<String, BeatriceError> {
+    pub fn set_min_source_pitch(&mut self, min_source_pitch: f64) {
+        if let Beatrice::BeatriceRC0(b) = self {
+            b.set_min_source_pitch(min_source_pitch)
+        }
+    }
+
+    pub fn set_max_source_pitch(&mut self, max_source_pitch: f64) {
+        if let Beatrice::BeatriceRC0(b) = self {
+            b.set_max_source_pitch(max_source_pitch)
+        }
+    }
+
+    pub fn set_vq_num_neighbors(&mut self, vq_num_neighbors: i32) {
+        if let Beatrice::BeatriceRC0(b) = self {
+            b.set_vq_num_neighbors(vq_num_neighbors)
+        }
+    }
+
+    pub fn get_model_version(&self) -> String {
+        match self {
+            Beatrice::BeatriceBeta0(_) => "2.0.0-alpha".into(),
+            Beatrice::BeatriceBeta1(_) => "2.0.0-beta.1".into(),
+            Beatrice::BeatriceRC0(_) => "2.0.0-rc.0".into(),
+        }
+    }
+
+    fn internal_get_model_version(model_path: impl AsRef<Path>) -> Result<String, BeatriceError> {
         // search toml
         let mut toml_path = None;
         for file_entry in std::fs::read_dir(&model_path)?.flatten() {

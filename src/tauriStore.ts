@@ -13,4 +13,13 @@ export interface TauriStoreSliders {
     inputGain: number | null,
     outputGain: number | null,
     formantShift: number | null,
+
+    isDisplayAdvancedSettings: boolean | null,
+    averageSourcePitch: number | null,
+    intonationIntensity: number | null,
+    pitchCorrection: number | null,
+    pitchCorrectionType: number | null,
+    minSourcePitch: number | null,
+    maxSourcePitch: number | null,
+    vqNumNeighbors: number | null,
 }
