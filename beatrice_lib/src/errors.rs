@@ -1,6 +1,7 @@
+#![allow(non_upper_case_globals)]
 use std::ffi::NulError;
 
-use crate::bindings::Beatrice_ErrorCode;
+use crate::bindings::*;
 
 #[derive(Debug, thiserror::Error)]
 pub enum BeatriceError {
@@ -37,11 +38,11 @@ impl TryFrom<Beatrice_ErrorCode> for BeatriceError {
 
     fn try_from(value: Beatrice_ErrorCode) -> Result<Self, Self::Error> {
         match value {
-            Beatrice_ErrorCode::Beatrice_kSuccess => Err(()),
-            Beatrice_ErrorCode::Beatrice_kFileOpenError => Ok(BeatriceError::FileOpenError),
-            Beatrice_ErrorCode::Beatrice_kFileTooSmall => Ok(BeatriceError::FileTooSmall),
-            Beatrice_ErrorCode::Beatrice_kFileTooLarge => Ok(BeatriceError::FileTooLarge),
-            Beatrice_ErrorCode::Beatrice_kInvalidFileSize => Ok(BeatriceError::InvalidFileSize),
+            Beatrice_ErrorCode_Beatrice_kFileOpenError => Ok(BeatriceError::FileOpenError),
+            Beatrice_ErrorCode_Beatrice_kFileTooSmall => Ok(BeatriceError::FileTooSmall),
+            Beatrice_ErrorCode_Beatrice_kFileTooLarge => Ok(BeatriceError::FileTooLarge),
+            Beatrice_ErrorCode_Beatrice_kInvalidFileSize => Ok(BeatriceError::InvalidFileSize),
+            _ => Err(()),
         }
     }
 }
