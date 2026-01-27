@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    beatrice_cilent_lib::run()
+    beatrice_client_lib::run()
 }
