@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["beatrice_lib"]
+members = ["beatrice_lib", "beatrice-cilent/src-tauri"]
 
 [workspace.dependencies]
 rubato = "0.16"
@@ -8,3 +8,7 @@ thiserror = "2.0"
 toml = "0.9.11"
 serde = { version = "1.0", features = ["derive"]}
 anyhow = "1.0"
+cpal = "0.16"
+ringbuf = "0.4.8"
+
+beatrice_lib = { path = "beatrice_lib" }

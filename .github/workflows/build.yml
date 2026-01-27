@@ -1,0 +1,85 @@
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.job.os }}
+
+    strategy:
+      matrix:
+        job:
+          - {
+              os: windows-latest,
+              target: x86_64-pc-windows-msvc,
+              extension: .exe,
+            }
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+
+      - name: install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+            beatrice-client/src-tauri/target
+          key: ${{ runner.os }}-rust-${{ hashFiles('beatrice-client/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rust-
+
+      - name: Cache JavaScript dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            beatrice-client/node_modules
+          key: ${{ runner.os }}-javascript-${{ hashFiles('./yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-javascript-
+
+      - name: yarn install
+        working-directory: beatrice-client
+        run: yarn install
+
+      - name: Generate ThirdPartyLicenses-javascript
+        working-directory: beatrice-client
+        run: |
+          yarn licenses generate-disclaimer > ../ThirdPartyLicenses-javascript.txt
+
+      - name: Generate ThirdpartyLicenses.html
+        working-directory: beatrice-client/src-tauri
+        run: |
+          cargo install --locked cargo-about || true
+          cargo about generate about.hbs -o ../../ThirdpartyLicenses.html
+
+      - name: build tauri
+        working-directory: beatrice-client
+        run: |
+          yarn tauri build
+
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path beatrice-client/src-tauri/target/release/beatrice-client.exe,ThirdPartyLicenses-javascript.txt,ThirdpartyLicenses.html,beatrice-cilent/src/components/ui/shadcn-license.txt -DestinationPath beatrice-client.zip
+        shell: pwsh
+
+      - name: Attach File
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: beatrice-client.zip

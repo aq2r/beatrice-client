@@ -8,7 +8,7 @@ pub struct BeatriceToml {
 }
 
 impl BeatriceToml {
-    pub fn load_from_modelpath(path: impl AsRef<Path>) -> anyhow::Result<Self> {
+    pub fn load_from_tomlpath(path: impl AsRef<Path>) -> anyhow::Result<Self> {
         let text = std::fs::read_to_string(path)?;
         let parsed: BeatriceToml = toml::from_str(&text)?;
 
@@ -46,7 +46,7 @@ mod tests {
     #[ignore]
     #[test]
     fn test_read() {
-        let t = BeatriceToml::load_from_modelpath("../test_file/beatrice.toml").unwrap();
+        let t = BeatriceToml::load_from_tomlpath("../test_file/beatrice.toml").unwrap();
         println!("{:#?}", t.model.version);
     }
 }

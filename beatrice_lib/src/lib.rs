@@ -7,8 +7,9 @@ mod bindings;
 mod errors;
 mod resampler;
 
-pub use beatrice::Beatrice;
+pub use beatrice::{Beatrice, new};
 pub use beatrice_beta_0::BeatriceBeta0;
 pub use beatrice_beta_1::BeatriceBeta1;
 pub use beatrice_rc_0::BeatriceRC0;
 pub use beatrice_toml::{BeatriceToml, ModelInfo, Portrait, Voice};
+pub use errors::BeatriceError;
