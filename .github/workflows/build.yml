@@ -52,7 +52,6 @@ jobs:
             ${{ runner.os }}-javascript-
 
       - name: yarn install
-        working-directory: beatrice-client
         run: yarn install
 
       - name: Generate ThirdPartyLicenses-javascript
