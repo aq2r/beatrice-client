@@ -51,15 +51,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-javascript-
 
-      - name: Debug working directory (pwsh)
-        shell: pwsh
-        run: |
-          Write-Host "PWD:"
-          Get-Location
-          Write-Host ""
-          Write-Host "LS:"
-          Get-ChildItem
-
       - name: yarn install
         working-directory: beatrice-client
         run: yarn install

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["beatrice_lib", "beatrice-cilent/src-tauri"]
+members = ["beatrice_lib", "beatrice-client/src-tauri"]
 
 [workspace.dependencies]
 rubato = "0.16"
