@@ -74,7 +74,7 @@ jobs:
 
       - name: Create ZIP archive
         run: |
-          Compress-Archive -Path beatrice-client/src-tauri/target/release/beatrice-client.exe,ThirdPartyLicenses-javascript.txt,ThirdpartyLicenses.html,beatrice-client/src/components/ui/shadcn-license.txt -DestinationPath beatrice-client.zip
+          Compress-Archive -Path target/release/beatrice-client.exe,ThirdPartyLicenses-javascript.txt,ThirdpartyLicenses.html,beatrice-client/src/components/ui/shadcn-license.txt -DestinationPath beatrice-client.zip
         shell: pwsh
 
       - name: Attach File
