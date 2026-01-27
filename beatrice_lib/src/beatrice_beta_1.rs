@@ -4,7 +4,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::{BeatriceError, bindings::*, resamplers::Resamplers};
+use crate::{beatrice::Beatrice, bindings::*, errors::BeatriceError, resampler::BeatriceResampler};
 
 struct BeatriceLibData {
     phone_extractor: *mut Beatrice20b1_PhoneExtractor,
@@ -15,15 +15,15 @@ struct BeatriceLibData {
     waveform_context: *mut Beatrice20b1_WaveformContext1,
 }
 
-struct BeatriceInfo {
-    target_speaker: i32,
-    formant_shift: f64,
-    pitch_shift: f64,
-    n_speakers: i32,
-    average_source_pitch: f64,
-    intonation_intensity: f64,
-    pitch_correction: f64,
-    pitch_correction_type: i32,
+pub struct BeatriceInfo {
+    pub target_speaker: i32,
+    pub formant_shift: f64,
+    pub pitch_shift: f64,
+    pub n_speakers: i32,
+    pub average_source_pitch: f64,
+    pub intonation_intensity: f64,
+    pub pitch_correction: f64,
+    pub pitch_correction_type: i32,
 }
 
 impl Default for BeatriceInfo {
@@ -49,14 +49,18 @@ struct BeatriceModel {
 
 pub struct BeatriceBeta1 {
     model: Option<BeatriceModel>,
-    info: BeatriceInfo,
+    pub info: BeatriceInfo,
     lib: BeatriceLibData,
-    resamplers: Resamplers,
+    resampler: BeatriceResampler,
 }
 
 impl BeatriceBeta1 {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> BeatriceBeta1 {
+    pub fn new(
+        in_sample_rate: f64,
+        out_sample_rate: f64,
+        in_channel: u32,
+        out_channel: u32,
+    ) -> Self {
         let lib = unsafe {
             BeatriceLibData {
                 phone_extractor: Beatrice20b1_CreatePhoneExtractor(),
@@ -74,7 +78,12 @@ impl BeatriceBeta1 {
             model: None,
             info,
             lib,
-            resamplers: Resamplers::new(48000.0, 48000.0, 2, 2).expect("Failed create Resampler"),
+            resampler: BeatriceResampler::new(
+                in_sample_rate,
+                out_sample_rate,
+                in_channel,
+                out_channel,
+            ),
         }
     }
 
@@ -152,8 +161,8 @@ impl BeatriceBeta1 {
                 return Err(err);
             }
 
-            let new_size =
-                ((self.info.n_speakers + 1) as usize) * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS;
+            let new_size = ((self.info.n_speakers + 1) as usize)
+                * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS as usize;
             speaker_embeddings.resize(new_size, 0.0_f32);
 
             let result = unsafe {
@@ -173,8 +182,10 @@ impl BeatriceBeta1 {
         {
             let file_name = create_cstring("formant_shift_embeddings.bin")?;
 
-            formant_shift_embeddings
-                .resize(9 * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS, 0.0_f32);
+            formant_shift_embeddings.resize(
+                (9 * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS) as usize,
+                0.0_f32,
+            );
 
             let result = unsafe {
                 Beatrice20b1_ReadSpeakerEmbeddings(
@@ -197,113 +208,30 @@ impl BeatriceBeta1 {
         Ok(())
     }
 
-    pub fn reset_context(&mut self) {
-        unsafe {
-            let phone_context = Beatrice20b1_CreatePhoneContext1();
-            let pitch_context = Beatrice20b1_CreatePitchContext1();
-            let waveform_context = Beatrice20b1_CreateWaveformContext1();
-
-            let old_phone_ctx = self.lib.phone_context;
-            let old_pitch_ctx = self.lib.pitch_context;
-            let old_waveform_ctx = self.lib.waveform_context;
-
-            self.lib.phone_context = phone_context;
-            self.lib.pitch_context = pitch_context;
-            self.lib.waveform_context = waveform_context;
-
-            Beatrice20b1_DestroyPhoneContext1(old_phone_ctx);
-            Beatrice20b1_DestroyPitchContext1(old_pitch_ctx);
-            Beatrice20b1_DestroyWaveformContext1(old_waveform_ctx);
-        }
-    }
-
     pub fn infer(&mut self, input: &[f32]) -> Result<Vec<f32>, BeatriceError> {
         if self.model.is_none() {
             return Err(BeatriceError::ModelNotLoaded);
         }
 
-        let beatrice_input = self.resamplers.convert_from_beatrice_input(input);
+        let beatrice_input = self.resampler.convert_to_beatrice_input(input);
 
         let mut processed = vec![];
-        for chunk in beatrice_input.chunks(BEATRICE_IN_HOP_LENGTH) {
+        for chunk in beatrice_input.chunks(BEATRICE_IN_HOP_LENGTH as usize) {
             let mut buffer = [0.0; 160];
 
             buffer[..chunk.len()].copy_from_slice(chunk);
             processed.extend_from_slice(self.infer_slice(&buffer)?.as_ref());
         }
 
-        let output = self.resamplers.convert_from_beatrice_output(processed);
+        let output = self.resampler.convert_from_beatrice_output(&processed);
         Ok(output)
     }
 
-    pub fn set_input_setting(
-        &mut self,
-        sample_rate: f64,
-        channel: usize,
-    ) -> Result<(), rubato::ResamplerConstructionError> {
-        self.resamplers.set_input_setting(sample_rate, channel)
-    }
-
-    pub fn set_output_setting(
-        &mut self,
-        sample_rate: f64,
-        channel: usize,
-    ) -> Result<(), rubato::ResamplerConstructionError> {
-        self.resamplers.set_output_setting(sample_rate, channel)
-    }
-
-    pub fn get_model_path(&self) -> Option<&PathBuf> {
-        match &self.model {
-            Some(model) => Some(&model.model_path),
-            None => None,
-        }
-    }
-
-    pub fn get_n_speaker(&self) -> Option<i32> {
-        self.model.as_ref().map(|_| self.info.n_speakers)
-    }
-
-    pub fn set_target_speaker(&mut self, speaker: u32) -> Result<(), BeatriceError> {
-        let speaker = speaker as i32;
-
-        if (self.info.n_speakers - 1) < speaker {
-            return Err(BeatriceError::SpeakerOutOfRange);
-        }
-
-        self.info.target_speaker = speaker;
-        Ok(())
-    }
-
-    pub fn set_formant_shift(&mut self, formant_shift: f64) {
-        self.info.formant_shift = formant_shift;
-    }
-
-    pub fn set_pitch_shift(&mut self, pitch_shift: f64) {
-        self.info.pitch_shift = pitch_shift;
-    }
-
-    pub fn set_average_source_pitch(&mut self, average_source_pitch: f64) {
-        self.info.average_source_pitch = average_source_pitch;
-    }
-
-    pub fn set_intonation_intensity(&mut self, intonation_intensity: f64) {
-        self.info.intonation_intensity = intonation_intensity;
-    }
-
-    pub fn set_pitch_correction(&mut self, pitch_correction: f64) {
-        self.info.pitch_correction = pitch_correction;
-    }
-
-    pub fn set_pitch_correction_type(&mut self, pitch_correction_type: i32) {
-        self.info.pitch_correction_type = pitch_correction_type;
-    }
-
-    /* Private */
     fn infer_slice(
         &mut self,
-        input: &[f32; BEATRICE_IN_HOP_LENGTH],
-    ) -> Result<[f32; BEATRICE_OUT_HOP_LENGTH], BeatriceError> {
-        let mut phone = [0.0_f32; BEATRICE_20B1_PHONE_CHANNELS];
+        input: &[f32; BEATRICE_IN_HOP_LENGTH as usize],
+    ) -> Result<[f32; BEATRICE_OUT_HOP_LENGTH as usize], BeatriceError> {
+        let mut phone = [0.0_f32; BEATRICE_20B1_PHONE_CHANNELS as usize];
         unsafe {
             Beatrice20b1_ExtractPhone1(
                 self.lib.phone_extractor,
@@ -403,29 +331,29 @@ impl BeatriceBeta1 {
         };
 
         // speaker
-        let mut speaker = [0.0_f32; BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS];
+        let mut speaker = [0.0_f32; BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS as usize];
 
         if let Some(self_model) = &mut self.model {
             unsafe {
-                let src_start =
-                    self.info.target_speaker as usize * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS;
+                let src_start = self.info.target_speaker as usize
+                    * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS as usize;
                 let src_slice = &self_model.speaker_embeddings
-                    [src_start..src_start + BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS];
+                    [src_start..src_start + BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS as usize];
 
                 std::ptr::copy_nonoverlapping(
                     src_slice.as_ptr(),
                     speaker.as_mut_ptr(),
-                    BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS,
+                    BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS as usize,
                 );
             }
 
             let formant_shift_index = ((self.info.formant_shift * 2.0 + 4.0).round() as usize)
-                * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS;
+                * BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS as usize;
 
             for (i, take_speaker) in speaker
                 .iter_mut()
                 .enumerate()
-                .take(BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS)
+                .take(BEATRICE_WAVEFORM_GENERATOR_HIDDEN_CHANNELS as usize)
             {
                 *take_speaker += self_model.formant_shift_embeddings[formant_shift_index + i];
             }
@@ -463,5 +391,64 @@ impl Drop for BeatriceBeta1 {
             Beatrice20b1_DestroyPitchContext1(self.lib.pitch_context);
             Beatrice20b1_DestroyWaveformContext1(self.lib.waveform_context)
         }
+    }
+}
+
+impl Beatrice for BeatriceBeta1 {
+    fn infer(&mut self, input: &[f32]) -> Result<Vec<f32>, BeatriceError> {
+        self.infer(input)
+    }
+
+    fn get_model_path(&self) -> Option<&Path> {
+        self.model.as_ref().map(|m| m.model_path.as_path())
+    }
+
+    fn get_n_speaker(&self) -> Option<i32> {
+        self.model.as_ref().map(|_| self.info.n_speakers)
+    }
+
+    fn set_target_speaker(&mut self, speaker: u32) -> Result<(), BeatriceError> {
+        let speaker = speaker as i32;
+
+        if (self.info.n_speakers - 1) < speaker {
+            return Err(BeatriceError::SpeakerOutOfRange);
+        }
+
+        self.info.target_speaker = speaker;
+        Ok(())
+    }
+
+    fn set_formant_shift(&mut self, formant_shift: f64) {
+        self.info.formant_shift = formant_shift;
+    }
+
+    fn set_pitch_shift(&mut self, pitch_shift: f64) {
+        self.info.pitch_shift = pitch_shift;
+    }
+
+    fn set_average_source_pitch(&mut self, average_source_pitch: f64) {
+        self.info.average_source_pitch = average_source_pitch;
+    }
+
+    fn set_intonation_intensity(&mut self, intonation_intensity: f64) {
+        self.info.intonation_intensity = intonation_intensity;
+    }
+
+    fn set_pitch_correction(&mut self, pitch_correction: f64) {
+        self.info.pitch_correction = pitch_correction;
+    }
+
+    fn set_pitch_correction_type(&mut self, pitch_correction_type: i32) {
+        self.info.pitch_correction_type = pitch_correction_type;
+    }
+
+    fn set_min_source_pitch(&mut self, _min_source_pitch: f64) {}
+
+    fn set_max_source_pitch(&mut self, _max_source_pitch: f64) {}
+
+    fn set_vq_num_neighbors(&mut self, _vq_num_neighbors: i32) {}
+
+    fn get_model_version(&self) -> &'static str {
+        "2.0.0-beta.1"
     }
 }

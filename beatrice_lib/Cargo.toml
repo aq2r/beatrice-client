@@ -5,10 +5,11 @@ edition = "2024"
 publish = false
 
 [dependencies]
-rubato = "0.16.1"
-thiserror = "2.0.12"
-ringbuf = "0.4.8"
+rubato = { workspace = true }
+thiserror = { workspace = true }
 toml = { workspace = true }
+serde = { workspace = true }
+anyhow = { workspace = true }
 
 [build-dependencies]
-reqwest = { version = "0.12.15", features = ["blocking"] }
+reqwest = { version = "0.13.1", features = ["blocking"] }

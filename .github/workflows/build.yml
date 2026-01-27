@@ -1,48 +1,84 @@
-name: build
-
 on:
   push:
-    tags:
-      - "v*"
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: write
 
 jobs:
-  build-tauri:
-    runs-on: windows-latest
-    permissions:
-      contents: write
+  build:
+    runs-on: ${{ matrix.job.os }}
+
+    strategy:
+      matrix:
+        job:
+          - {
+              os: windows-latest,
+              target: x86_64-pc-windows-msvc,
+              extension: .exe,
+            }
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: setup node
         uses: actions/setup-node@v3
         with:
           node-version: lts/*
 
-      - name: install Rust stable
+      - name: install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: install frontend dependencies
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+            beatrice-client/src-tauri/target
+          key: ${{ runner.os }}-rust-${{ hashFiles('beatrice-client/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-rust-
+
+      - name: Cache JavaScript dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            beatrice-client/node_modules
+          key: ${{ runner.os }}-javascript-${{ hashFiles('./beatrice-client/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-javascript-
+
+      - name: yarn install
+        working-directory: beatrice-client
         run: yarn install
 
-      - name: Generate ThirdPartyLicenses-js
+      - name: Generate ThirdPartyLicenses-javascript
+        working-directory: beatrice-client
         run: |
-          yarn licenses generate-disclaimer > ThirdPartyLicenses-js.txt
+          yarn licenses generate-disclaimer > ../ThirdPartyLicenses-javascript.txt
 
-      - name: Generate ThirdPartyLicenses-rs
+      - name: Generate ThirdpartyLicenses.html
         run: |
-          cargo install --locked cargo-bundle-licenses
-          cargo bundle-licenses --format yaml --output ThirdPartyLicenses-rs.yaml
+          cargo install --locked cargo-about || true
+          cargo about generate about.hbs -o ThirdpartyLicenses.html
 
       - name: build tauri
+        working-directory: beatrice-client
         run: |
           yarn tauri build
+
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path target/release/beatrice-client.exe,ThirdPartyLicenses-javascript.txt,ThirdpartyLicenses.html,beatrice-client/src/components/ui/shadcn-license.txt -DestinationPath beatrice-client.zip
+        shell: pwsh
 
       - name: Attach File
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          files: |
-            target/release/beatrice-client.exe
-            ThirdPartyLicenses-js.txt
-            ThirdPartyLicenses-rs.yaml
+          files: beatrice-client.zip
