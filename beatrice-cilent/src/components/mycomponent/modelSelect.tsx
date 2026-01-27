@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/context-menu";
 
 function ModelCard({ model }: { model: BeatriceModelInfo }) {
-  const [loadedModels, setLoadedModels] = useAtom(jotaiAtoms.loadedModels);
+  const [, setLoadedModels] = useAtom(jotaiAtoms.loadedModels);
   const [selectModel, setSelectModel] = useAtom(jotaiAtoms.selectModel);
   const [, selectSpeakerIdx] = useAtom(jotaiAtoms.selectSpeakerIdx);
 

@@ -49,7 +49,7 @@ jobs:
         with:
           path: |
             beatrice-client/node_modules
-          key: ${{ runner.os }}-javascript-${{ hashFiles('./yarn.lock') }}
+          key: ${{ runner.os }}-javascript-${{ hashFiles('./beatrice-client/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-javascript-
 
@@ -63,10 +63,9 @@ jobs:
           yarn licenses generate-disclaimer > ../ThirdPartyLicenses-javascript.txt
 
       - name: Generate ThirdpartyLicenses.html
-        working-directory: beatrice-client/src-tauri
         run: |
           cargo install --locked cargo-about || true
-          cargo about generate about.hbs -o ../../ThirdpartyLicenses.html
+          cargo about generate about.hbs -o ThirdpartyLicenses.html
 
       - name: build tauri
         working-directory: beatrice-client
@@ -75,7 +74,7 @@ jobs:
 
       - name: Create ZIP archive
         run: |
-          Compress-Archive -Path beatrice-client/src-tauri/target/release/beatrice-client.exe,ThirdPartyLicenses-javascript.txt,ThirdpartyLicenses.html,beatrice-cilent/src/components/ui/shadcn-license.txt -DestinationPath beatrice-client.zip
+          Compress-Archive -Path beatrice-client/src-tauri/target/release/beatrice-client.exe,ThirdPartyLicenses-javascript.txt,ThirdpartyLicenses.html,beatrice-client/src/components/ui/shadcn-license.txt -DestinationPath beatrice-client.zip
         shell: pwsh
 
       - name: Attach File
