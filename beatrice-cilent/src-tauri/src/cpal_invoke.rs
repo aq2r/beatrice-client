@@ -172,6 +172,7 @@ pub async fn cpal_start_voice_changer(
         // monitor
         let monitor_devices = host.output_devices()?.collect::<Vec<_>>();
         let monitor_device = match monitor_device_name {
+            Some(device_name) if device_name == "None" => None,
             Some(device_name) => {
                 let Some(monitor_idx) = monitor_devices.iter().position(|device| {
                     device.name().unwrap_or_else(|_| String::new()) == device_name
