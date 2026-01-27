@@ -18,7 +18,7 @@ impl BeatriceResampler {
         out_channel: u32,
     ) -> Self {
         let in_resampler = SincFixedIn::<f32>::new(
-            16000.0 / in_sample_rate,
+            (in_sample_rate / 100.0).round(),
             2.0,
             SincInterpolationParameters {
                 sinc_len: 256,
