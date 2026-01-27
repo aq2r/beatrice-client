@@ -55,9 +55,8 @@ jobs:
         run: yarn install
 
       - name: Generate ThirdPartyLicenses-javascript
-        working-directory: beatrice-client
         run: |
-          yarn licenses generate-disclaimer > ../ThirdPartyLicenses-javascript.txt
+          yarn licenses generate-disclaimer > ThirdPartyLicenses-javascript.txt
 
       - name: Generate ThirdpartyLicenses.html
         run: |
@@ -65,7 +64,6 @@ jobs:
           cargo about generate about.hbs -o ThirdpartyLicenses.html
 
       - name: build tauri
-        working-directory: beatrice-client
         run: |
           yarn tauri build
 
