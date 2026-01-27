@@ -254,11 +254,8 @@ pub async fn cpal_start_voice_changer(
                         }
                     };
 
-                    let len = input_buffer.len().min(result.len());
-                    input_buffer[..len].copy_from_slice(&result[..len]);
-
-                    output_producer.push_slice(&input_buffer);
-                    monitor_producer.push_slice(&input_buffer);
+                    output_producer.push_slice(&result);
+                    monitor_producer.push_slice(&result);
                 },
                 |err| eprintln!("入力エラー: {err}"),
                 None,
