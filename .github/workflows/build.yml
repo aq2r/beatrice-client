@@ -52,9 +52,11 @@ jobs:
             ${{ runner.os }}-javascript-
 
       - name: yarn install
+        working-directory: ./beatrice-client
         run: yarn install
 
       - name: Generate ThirdPartyLicenses-javascript
+        working-directory: ./beatrice-client
         run: |
           yarn licenses generate-disclaimer > ../ThirdPartyLicenses-javascript.txt
 
@@ -64,6 +66,7 @@ jobs:
           cargo about generate about.hbs -o ThirdpartyLicenses.html
 
       - name: build tauri
+        working-directory: ./beatrice-client
         run: |
           yarn tauri build
 
