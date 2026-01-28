@@ -6,6 +6,8 @@ pub struct BeatriceResampler {
     in_resampler: SincFixedIn<f32>,
     out_resampler: SincFixedIn<f32>,
 
+    in_sample_rate: f64,
+    out_sample_rate: f64,
     in_channel: u32,
     out_channel: u32,
 }
@@ -50,18 +52,24 @@ impl BeatriceResampler {
         Self {
             in_resampler,
             out_resampler,
+            in_sample_rate,
+            out_sample_rate,
             in_channel,
             out_channel,
         }
     }
 
     pub fn convert_to_beatrice_input(&mut self, input: &[f32]) -> Vec<f32> {
-        let mut mono = vec![];
+        let mut mono = vec![0.0; (self.in_sample_rate / 100.0).round() as usize];
         match self.in_channel {
-            1 => mono.extend_from_slice(input),
+            1 => {
+                for (i, d) in input.iter().enumerate() {
+                    mono[i] = *d;
+                }
+            }
             2 => {
-                for chunk in input.chunks_exact(2) {
-                    mono.push((chunk[0] + chunk[1]) / 2.0);
+                for (i, chunk) in input.chunks_exact(2).enumerate() {
+                    mono[i] = (chunk[0] + chunk[1]) / 2.0;
                 }
             }
             _ => panic!("in_channel must be 1 or 2"),
