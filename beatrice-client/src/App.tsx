@@ -150,7 +150,6 @@ function LoadTauriStore({
 
 // Beatrice側を更新する
 function SyncBeatrice() {
-  // デバイス・モデル
   const [selectModel] = useAtom(jotaiAtoms.selectModel);
   const [selectSpeakerIdx, setSelectSpeakerIdx] = useAtom(
     jotaiAtoms.selectSpeakerIdx,
@@ -159,6 +158,7 @@ function SyncBeatrice() {
   const [voiceSetting] = useAtom(jotaiAtoms.voiceSetting);
   const [outputSetting] = useAtom(jotaiAtoms.outputSetting);
 
+  // モデル
   useEffect(() => {
     const promise = async () => {
       if (selectModel !== null) {
@@ -185,7 +185,34 @@ function SyncBeatrice() {
     };
 
     promise();
-  }, [selectModel, deviceSetting]);
+  }, [selectModel]);
+
+  // デバイス
+  useEffect(() => {
+    const promise = async () => {
+      if (selectModel !== null) {
+        await rustInvoke.cpal.startVoiceChanger(
+          selectModel.model_path,
+          deviceSetting.input,
+          deviceSetting.output,
+          deviceSetting.monitor,
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        rustInvoke.beatrice.setPitch(voiceSetting.pitch);
+        rustInvoke.beatrice.setFormantShift(voiceSetting.formant);
+        rustInvoke.beatrice.setIntonationIntensity(
+          voiceSetting.intonationIntensity,
+        );
+        rustInvoke.beatrice.setMinSourcePitch(voiceSetting.minSourcePitch);
+        rustInvoke.beatrice.setMaxSourcePitch(voiceSetting.maxSourcePitch);
+        rustInvoke.beatrice.setVqNumNeighbors(voiceSetting.vqNeighborCount);
+      }
+    };
+
+    promise();
+  }, [deviceSetting]);
 
   // output設定
   useEffect(() => {

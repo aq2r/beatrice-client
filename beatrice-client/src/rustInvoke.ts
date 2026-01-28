@@ -68,13 +68,13 @@ const beatrice = {
   },
 
   setTargetSpeaker: async (target: number) => {
-    return await tauri.invoke<null>("beatrice_get_nspeaker", {
+    return await tauri.invoke<null>("beatrice_set_target_speaker", {
       target: target,
     });
   },
 
   getVersion: async () => {
-    return await tauri.invoke<string | null>("beatrice_get_nspeaker");
+    return await tauri.invoke<string | null>("beatrice_get_version");
   },
 
   setPitch: async (pitch: number) => {
