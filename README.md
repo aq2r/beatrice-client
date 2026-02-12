@@ -8,6 +8,8 @@ https://prj-beatrice.com/
 
 ## 使用方法
 
+"+" ボタンから使用したいモデルフォルダーを選択します。 (v0.3.0以前とは選択するフォルダが変わりました)
+
 アプリのダウンロード: [Releases](https://github.com/aq2r/beatrice-client/releases)
 
 Beatrice `2.0.0-beta.0` ~ `2.0.0-rc.0` のモデルに対応しています。
